@@ -1259,7 +1259,14 @@ def create_log(game):
     if game.cmd_mode:
         text.append("\n")
         text.append("> ", style="bold yellow")
-        text.append(game.cmd_buffer if game.cmd_buffer else " ")
+        # 显示输入内容和光标
+        if game.cmd_buffer:
+            text.append(game.cmd_buffer)
+            # 添加闪烁光标效果（使用不同颜色模拟闪烁）
+            cursor_char = "█" if game.frame % 10 < 5 else "▌"
+            text.append(cursor_char, style="bold yellow")
+        else:
+            text.append("█", style="bold yellow")  # 空输入时的光标
         if game.cmd_suggestions and game.cmd_buffer:
             text.append("\n")
             for i, sugg in enumerate(game.cmd_suggestions[:4]):
