@@ -8,8 +8,8 @@ import select
 import tty
 import termios
 import argparse
-from dataclasses import dataclass
-from typing import List, Tuple, Dict, Optional
+from dataclasses import dataclass, field
+from typing import List, Tuple, Dict, Optional, Callable
 from enum import Enum, auto
 
 from rich.live import Live
@@ -44,28 +44,28 @@ GAME_ASSETS = {
         "name": "勇者",
         "style": "bright_green",
         "alt_char": "♚",  # 呼吸动画变体
-        "style_alt": "green"
+        "style_alt": "green",
     },
     "player_mage": {
         "char": "⚚",
         "name": "法师",
         "style": "bright_cyan",
         "alt_char": "⚕",
-        "style_alt": "cyan"
+        "style_alt": "cyan",
     },
     "player_rogue": {
         "char": "⚔",
         "name": "刺客",
         "style": "bright_red",
         "alt_char": "⚔",
-        "style_alt": "red"
+        "style_alt": "red",
     },
     "player_paladin": {
         "char": "♞",
         "name": "圣骑",
         "style": "bright_yellow",
         "alt_char": "♘",
-        "style_alt": "yellow"
+        "style_alt": "yellow",
     },
     # 敌人 - 易区分
     "enemy_slime": {
@@ -73,62 +73,42 @@ GAME_ASSETS = {
         "name": "史莱姆",
         "style": "green",
         "alt_char": "●",
-        "style_alt": "bright_green"
+        "style_alt": "bright_green",
     },
     "enemy_goblin": {
         "char": "ʘ",
         "name": "哥布林",
         "style": "yellow",
         "alt_char": "⊙",
-        "style_alt": "bright_yellow"
+        "style_alt": "bright_yellow",
     },
     "enemy_skeleton": {
         "char": "☠",
         "name": "骷髅",
         "style": "white",
         "alt_char": "☠",
-        "style_alt": "bright_white"
+        "style_alt": "bright_white",
     },
     "enemy_orc": {
         "char": "Ω",
         "name": "兽人",
         "style": "red",
         "alt_char": "Ѱ",
-        "style_alt": "bright_red"
+        "style_alt": "bright_red",
     },
     "enemy_shadow": {
         "char": "✦",
         "name": "暗影",
         "style": "magenta",
         "alt_char": "✧",
-        "style_alt": "bright_magenta"
+        "style_alt": "bright_magenta",
     },
     # 地图元素
-    "wall": {
-        "char": "█",
-        "name": "墙壁",
-        "style": "bright_black"
-    },
-    "floor": {
-        "char": "·",
-        "name": "地面",
-        "style": "dim white"
-    },
-    "potion": {
-        "char": "♥",
-        "name": "生命药水",
-        "style": "bright_red"
-    },
-    "gold": {
-        "char": "◆",
-        "name": "金币",
-        "style": "bright_yellow"
-    },
-    "exit": {
-        "char": "⌂",
-        "name": "出口",
-        "style": "bright_cyan"
-    },
+    "wall": {"char": "█", "name": "墙壁", "style": "bright_black"},
+    "floor": {"char": "·", "name": "地面", "style": "dim white"},
+    "potion": {"char": "♥", "name": "生命药水", "style": "bright_red"},
+    "gold": {"char": "◆", "name": "金币", "style": "bright_yellow"},
+    "exit": {"char": "⌂", "name": "出口", "style": "bright_cyan"},
 }
 
 # 保持向后兼容
@@ -178,7 +158,7 @@ class FloatingText:
     life: int
     max_life: int = 0  # 用于计算透明度
     dy: float = -0.15
-    
+
     def __post_init__(self):
         if self.max_life == 0:
             self.max_life = self.life
@@ -187,7 +167,7 @@ class FloatingText:
         self.y += self.dy
         self.life -= 1
         return self.life > 0
-    
+
     def get_alpha_style(self):
         """根据生命值返回带透明度的样式"""
         alpha = self.life / self.max_life if self.max_life > 0 else 1.0
@@ -221,7 +201,7 @@ class Enemy:
     def get_render(self):
         """返回敌人渲染数据 - 清晰符号版本"""
         asset = GAME_ASSETS.get(self.enemy_type, GAME_ASSETS["enemy_slime"])
-        
+
         # 呼吸动画 - 切换字符和样式
         if self.frame < 10:
             char = asset["char"]
@@ -229,11 +209,11 @@ class Enemy:
         else:
             char = asset.get("alt_char", asset["char"])
             style = asset.get("style_alt", asset["style"])
-        
+
         if self.flash > 0:
             # 受伤时闪烁效果
             return char, "bold white on red"
-        
+
         return char, style
 
 
@@ -257,25 +237,54 @@ class Player:
     flash: int = 0
     frame: int = 0
     play_time: float = 0  # 游戏时长（秒）
-    enemy_kills: Dict[str, int] = None  # 各类型敌人击杀统计
-
-    def __post_init__(self):
-        if self.enemy_kills is None:
-            self.enemy_kills = {}
+    enemy_kills: Dict[str, int] = field(default_factory=dict)  # 各类型敌人击杀统计
 
     @classmethod
     def create(cls, char_type: str = "default"):
         """根据角色类型创建玩家"""
         configs = {
-            "default": {"hp": 100, "atk": 10, "defense": 0, "crit": 0, "lifesteal": 0, "regen": 0},
-            "mage": {"hp": 80, "atk": 15, "defense": 0, "crit": 10, "lifesteal": 0, "regen": 1},
-            "rogue": {"hp": 85, "atk": 12, "defense": 0, "crit": 20, "lifesteal": 5, "regen": 0},
-            "paladin": {"hp": 130, "atk": 8, "defense": 2, "crit": 0, "lifesteal": 0, "regen": 1},
+            "default": {
+                "hp": 100,
+                "atk": 10,
+                "defense": 0,
+                "crit": 0,
+                "lifesteal": 0,
+                "regen": 0,
+            },
+            "mage": {
+                "hp": 80,
+                "atk": 15,
+                "defense": 0,
+                "crit": 10,
+                "lifesteal": 0,
+                "regen": 1,
+            },
+            "rogue": {
+                "hp": 85,
+                "atk": 12,
+                "defense": 0,
+                "crit": 20,
+                "lifesteal": 5,
+                "regen": 0,
+            },
+            "paladin": {
+                "hp": 130,
+                "atk": 8,
+                "defense": 2,
+                "crit": 0,
+                "lifesteal": 0,
+                "regen": 1,
+            },
         }
         c = configs.get(char_type, configs["default"])
         return cls(
-            hp=c["hp"], max_hp=c["hp"], atk=c["atk"],
-            defense=c["defense"], crit=c["crit"], lifesteal=c["lifesteal"], regen=c["regen"]
+            hp=c["hp"],
+            max_hp=c["hp"],
+            atk=c["atk"],
+            defense=c["defense"],
+            crit=c["crit"],
+            lifesteal=c["lifesteal"],
+            regen=c["regen"],
         )
 
     def animate(self):
@@ -287,7 +296,7 @@ class Player:
         """返回玩家渲染数据 - 清晰符号版本"""
         char_key = CHARACTERS.get(CONFIG.char_set, "player_default")
         asset = GAME_ASSETS[char_key]
-        
+
         # 呼吸动画 - 切换字符和样式
         if self.frame < 6:
             char = asset["char"]
@@ -295,38 +304,71 @@ class Player:
         else:
             char = asset.get("alt_char", asset["char"])
             style = asset.get("style_alt", asset["style"])
-        
+
         if self.flash > 0:
             return char, "bold white on red"
-        
+
         return char, style
 
 
 @dataclass
-@dataclass
 class ShopItem:
     """商店物品"""
+
     name: str
     desc: str
     price: int
     icon: str
-    effect: callable
+    effect: Callable
     one_time: bool = False  # 是否一次性物品（如血瓶可重复购买）
 
 
 class Shop:
     """商店系统"""
+
     ITEMS = [
-        ShopItem("生命药水", "恢复 30 HP", 20, "♥", 
-                 lambda p: setattr(p, "hp", min(p.max_hp, p.hp + 30)), False),
-        ShopItem("力量卷轴", "攻击力 +2", 50, "⚔",
-                 lambda p: setattr(p, "atk", p.atk + 2), False),
-        ShopItem("体质卷轴", "最大生命 +20", 50, "♥",
-                 lambda p: setattr(p, "max_hp", p.max_hp + 20) or setattr(p, "hp", p.hp + 20), False),
-        ShopItem("铁皮药剂", "防御 +1", 40, "🛡",
-                 lambda p: setattr(p, "defense", p.defense + 1), False),
-        ShopItem("狂暴卷轴", "暴击率 +10%", 60, "⚡",
-                 lambda p: setattr(p, "crit", p.crit + 10), False),
+        ShopItem(
+            "生命药水",
+            "恢复 30 HP",
+            20,
+            "♥",
+            lambda p: setattr(p, "hp", min(p.max_hp, p.hp + 30)),
+            False,
+        ),
+        ShopItem(
+            "力量卷轴",
+            "攻击力 +2",
+            50,
+            "⚔",
+            lambda p: setattr(p, "atk", p.atk + 2),
+            False,
+        ),
+        ShopItem(
+            "体质卷轴",
+            "最大生命 +20",
+            50,
+            "♥",
+            lambda p: (
+                setattr(p, "max_hp", p.max_hp + 20) or setattr(p, "hp", p.hp + 20)
+            ),
+            False,
+        ),
+        ShopItem(
+            "铁皮药剂",
+            "防御 +1",
+            40,
+            "🛡",
+            lambda p: setattr(p, "defense", p.defense + 1),
+            False,
+        ),
+        ShopItem(
+            "狂暴卷轴",
+            "暴击率 +10%",
+            60,
+            "⚡",
+            lambda p: setattr(p, "crit", p.crit + 10),
+            False,
+        ),
     ]
 
 
@@ -382,27 +424,27 @@ class CommandHandler:
         """获取命令建议 - 处理以/开头的情况"""
         if not partial:
             return list(self.COMMANDS.keys())[:8]
-        
+
         # 如果输入以/开头，去掉它再匹配
         if partial.startswith("/"):
             partial = partial[1:]
-        
+
         return [cmd for cmd in self.COMMANDS.keys() if cmd.startswith(partial.lower())]
 
     def execute(self, cmd_line: str) -> str:
         """执行命令 - 必须以/开头"""
         cmd_line = cmd_line.strip()
-        
+
         # 检查是否以/开头
         if not cmd_line.startswith("/"):
             return "[yellow]命令必须以 / 开头，例如 /help[/]"
-        
+
         # 去掉开头的/
         cmd_line = cmd_line[1:]
         parts = cmd_line.split()
         if not parts:
             return None
-        
+
         cmd = parts[0].lower()
         args = parts[1:]
 
@@ -427,9 +469,11 @@ class CommandHandler:
 
         if cmd in handlers:
             return handlers[cmd](args)
-        
+
         # 容错设计：提供相似命令建议
-        suggestions = [c for c in self.COMMANDS.keys() if c.startswith(cmd[0]) and len(c) > 1]
+        suggestions = [
+            c for c in self.COMMANDS.keys() if c.startswith(cmd[0]) and len(c) > 1
+        ]
         if suggestions:
             return f"[yellow]未知命令: /{cmd}[/]\n[dim]你是否想输入: /{', /'.join(suggestions[:3])}?\n输入 /help 查看所有命令[/]"
         else:
@@ -665,25 +709,25 @@ class Game:
                 for x in range(CONFIG.map_width):
                     self.light[y][x] = 1.0
             return
-        
+
         px, py = self.player.x, self.player.y
         vd = CONFIG.view_distance
-        
+
         for y in range(CONFIG.map_height):
             for x in range(CONFIG.map_width):
                 # 欧几里得距离
                 dist = math.sqrt((x - px) ** 2 + (y - py) ** 2)
-                
+
                 if dist <= vd:
                     # 平滑的二次衰减
                     # 中心最亮(1.0)，边缘渐暗
                     ratio = dist / vd
-                    light = 1.0 - (ratio ** 1.5) * 0.7
-                    
+                    light = 1.0 - (ratio**1.5) * 0.7
+
                     # 添加微弱的闪烁效果（只在较暗区域）
                     if light < 0.6 and random.random() < 0.05:
                         light += 0.05
-                    
+
                     self.light[y][x] = max(0.15, light)
                 else:
                     # 视野外保持微弱可见
@@ -763,14 +807,21 @@ class Game:
             Upgrade(
                 "狂战士",
                 "攻击+5 防御-1",
-                lambda p: setattr(p, "atk", p.atk + 5) or setattr(p, "defense", max(0, p.defense - 1)),
+                lambda p: (
+                    setattr(p, "atk", p.atk + 5)
+                    or setattr(p, "defense", max(0, p.defense - 1))
+                ),
                 "rare",
                 "🪓",
             ),
             Upgrade(
                 "泰坦",
                 "生命+50 攻击-2",
-                lambda p: setattr(p, "max_hp", p.max_hp + 50) or setattr(p, "hp", p.hp + 50) or setattr(p, "atk", max(1, p.atk - 2)),
+                lambda p: (
+                    setattr(p, "max_hp", p.max_hp + 50)
+                    or setattr(p, "hp", p.hp + 50)
+                    or setattr(p, "atk", max(1, p.atk - 2))
+                ),
                 "rare",
                 "🗿",
             ),
@@ -791,14 +842,20 @@ class Game:
             Upgrade(
                 "不朽",
                 "生命+100 恢复+5",
-                lambda p: setattr(p, "max_hp", p.max_hp + 100) or setattr(p, "hp", p.hp + 100) or setattr(p, "regen", p.regen + 5),
+                lambda p: (
+                    setattr(p, "max_hp", p.max_hp + 100)
+                    or setattr(p, "hp", p.hp + 100)
+                    or setattr(p, "regen", p.regen + 5)
+                ),
                 "legendary",
                 "👑",
             ),
             Upgrade(
                 "毁灭者",
                 "攻击+15 暴击+20%",
-                lambda p: setattr(p, "atk", p.atk + 15) or setattr(p, "crit", p.crit + 20),
+                lambda p: (
+                    setattr(p, "atk", p.atk + 15) or setattr(p, "crit", p.crit + 20)
+                ),
                 "legendary",
                 "☠",
             ),
@@ -837,7 +894,7 @@ class Game:
 
     def add_msg(self, msg, style="white", msg_type="info"):
         """添加消息 - 带分类和优先级
-        
+
         msg_type: info, success, warning, danger, system
         """
         # 根据消息类型设置持续时间
@@ -848,9 +905,9 @@ class Game:
             "danger": 250,
             "system": 120,
         }
-        
+
         duration = type_config.get(msg_type, 150)
-        
+
         self.messages.append((msg, style, duration, msg_type))
         if len(self.messages) > 8:
             self.messages.pop(0)
@@ -864,7 +921,7 @@ class Game:
             else:
                 msg, style, life = msg_data
                 msg_type = "info"
-            
+
             if life > 0:
                 new_messages.append((msg, style, life - 1, msg_type))
         self.messages = new_messages
@@ -934,7 +991,9 @@ class Game:
             self.player.kills += 1
             # 统计各类型敌人击杀数
             enemy_key = enemy.enemy_type.replace("enemy_", "")
-            self.player.enemy_kills[enemy_key] = self.player.enemy_kills.get(enemy_key, 0) + 1
+            self.player.enemy_kills[enemy_key] = (
+                self.player.enemy_kills.get(enemy_key, 0) + 1
+            )
             self.enemies.remove(enemy)
             self.check_level()
         else:
@@ -944,7 +1003,11 @@ class Game:
     def enemy_attack(self, enemy):
         # 新防御公式: 伤害减免率 = defense / (defense + 10)
         # 这样防御有边际递减，但永远不会完全无敌
-        defense_factor = self.player.defense / (self.player.defense + 10) if self.player.defense > 0 else 0
+        defense_factor = (
+            self.player.defense / (self.player.defense + 10)
+            if self.player.defense > 0
+            else 0
+        )
         dmg = max(1, int(enemy.atk * (1 - defense_factor)))
         self.player.hp -= dmg
         self.player.flash = 2
@@ -973,7 +1036,9 @@ class Game:
         self.shop_open = True
         self.shop_sel = 0
         # 随机生成3-5个商品
-        self.shop_items = random.sample(Shop.ITEMS, min(len(Shop.ITEMS), random.randint(3, 5)))
+        self.shop_items = random.sample(
+            Shop.ITEMS, min(len(Shop.ITEMS), random.randint(3, 5))
+        )
         self.add_msg("欢迎光临商店！", "yellow", "system")
 
     def close_shop(self):
@@ -990,7 +1055,9 @@ class Game:
             self.player.gold -= item.price
             item.effect(self.player)
             self.add_msg(f"购买 {item.name} (-{item.price}G)", "green", "success")
-            self.spawn_particles(self.player.x, self.player.y, 6, [item.icon], ["yellow"])
+            self.spawn_particles(
+                self.player.x, self.player.y, 6, [item.icon], ["yellow"]
+            )
             return True
         else:
             self.add_msg(f"金币不足！需要 {item.price}G", "red", "warning")
@@ -1020,10 +1087,13 @@ class Game:
             if dist == 1:
                 self.enemy_attack(e)
             elif dist <= 5 and random.random() < 0.2:
-                mx = 1 if dx > 0 else -1 if dx < 0 else 0
-                my = 1 if dy > 0 else -1 if dy < 0 else 0
-                if abs(dx) < abs(dy):
-                    mx, my = 0, my
+                # 敌人AI：优先追踪较大的坐标差
+                if abs(dx) > abs(dy):
+                    mx = 1 if dx > 0 else -1
+                    my = 0
+                else:
+                    mx = 0
+                    my = 1 if dy > 0 else -1
                 nx, ny = e.x + mx, e.y + my
                 if (
                     0 <= nx < CONFIG.map_width
@@ -1115,9 +1185,9 @@ def get_light_style(style: str, light: float) -> str:
     if light < 0.3:
         return f"dim {style.replace('bright_', '').replace('bold ', '')}"
     elif light < 0.6:
-        return style.replace('bright_', '').replace('bold ', '')
+        return style.replace("bright_", "").replace("bold ", "")
     elif light < 0.9:
-        return style.replace('bright_', '')
+        return style.replace("bright_", "")
     return style
 
 
@@ -1130,29 +1200,29 @@ def render_map(game):
         if 0 <= fy < CONFIG.map_height and 0 <= fx < CONFIG.map_width:
             char = f.text[0] if f.text else ""
             float_chars[(fx, fy)] = (char, f.get_alpha_style())
-    
+
     # 收集粒子
     part_chars = {}
     for p in game.particles:
         px, py = int(p.x), int(p.y)
         if 0 <= py < CONFIG.map_height and 0 <= px < CONFIG.map_width:
             part_chars[(px, py)] = (p.char, p.style)
-    
+
     # 收集敌人位置
     enemy_pos = {(e.x, e.y): e for e in game.enemies}
-    
+
     # 单行渲染 - 更清晰
     lines = []
     for y in range(CONFIG.map_height):
         row = Text()
-        
+
         for x in range(CONFIG.map_width):
             light = game.light[y][x] if CONFIG.lighting else 1.0
             tile = game.map[y][x]
-            
+
             char = " "
             style = "dim white"
-            
+
             # 优先级：玩家 > 敌人 > 浮动文字 > 粒子 > 地图元素
             if game.player.x == x and game.player.y == y:
                 char, style = game.player.get_render()
@@ -1180,15 +1250,15 @@ def render_map(game):
                     # 地面 - 简洁的点
                     char = GAME_ASSETS["floor"]["char"]
                     style = GAME_ASSETS["floor"]["style"]
-            
+
             # 应用光照效果
             if CONFIG.lighting:
                 style = get_light_style(style, light)
-            
+
             row.append(Text(char, style=style))
-        
+
         lines.append(row)
-    
+
     return Group(*lines)
 
 
@@ -1196,16 +1266,18 @@ def create_compact_stats(game):
     """创建紧凑状态栏（用于窄终端模式）"""
     p = game.player
     text = Text()
-    
+
     # 紧凑显示关键信息
     text.append(f"Lv{p.level} ", style="yellow")
-    text.append(f"HP:{p.hp}/{p.max_hp} ", style="green" if p.hp > p.max_hp * 0.3 else "red")
+    text.append(
+        f"HP:{p.hp}/{p.max_hp} ", style="green" if p.hp > p.max_hp * 0.3 else "red"
+    )
     text.append(f"ATK:{p.atk} ", style="red")
     text.append(f"G:{p.gold}", style="yellow")
-    
+
     hp_ratio = p.hp / p.max_hp
     border_color = "green" if hp_ratio > 0.6 else "yellow" if hp_ratio > 0.3 else "red"
-    
+
     return Panel(
         Align.center(text),
         border_style=border_color,
@@ -1219,7 +1291,7 @@ def create_stats(game):
     p = game.player
     char_key = CHARACTERS[CONFIG.char_set]
     asset = GAME_ASSETS[char_key]
-    
+
     # 根据血量决定边框颜色（视觉反馈）
     hp_ratio = p.hp / p.max_hp
     if hp_ratio > 0.6:
@@ -1231,19 +1303,19 @@ def create_stats(game):
     else:
         border_color = "red"
         hp_style = "red bold blink"  # 低血量时闪烁警告
-    
+
     # 使用更紧凑的表格
     table = Table(show_header=False, box=None, padding=(0, 0), expand=True)
     table.add_column(style="white", width=3, justify="right")
     table.add_column()
-    
+
     # 主要属性
     table.add_row("Lv", f"[yellow bold]{p.level}[/]")
     table.add_row("HP", f"[{hp_style}]{p.hp}/{p.max_hp}[/{hp_style}]")
     table.add_row("ATK", f"[red bold]{p.atk}[/]")
     table.add_row("EXP", f"[cyan]{p.exp}/{p.exp_next}[/]")
     table.add_row("G", f"[yellow bold]{p.gold}[/]")
-    
+
     # 次要属性 - 单行显示
     sub_stats = Text()
     sub_stats.append(f"DEF:{p.defense}", style="dim")
@@ -1253,13 +1325,13 @@ def create_stats(game):
     sub_stats.append(f"LS:{p.lifesteal}%", style="dim")
     sub_stats.append("  ")
     sub_stats.append(f"CRT:{p.crit}%", style="dim")
-    
+
     # 游戏时间
     minutes = int(p.play_time // 60)
     seconds = int(p.play_time % 60)
     time_text = Text()
     time_text.append(f"⏱ {minutes}:{seconds:02d}", style="dim cyan")
-    
+
     return Panel(
         Group(table, Text(), sub_stats, Text(), time_text),
         title=f"{asset['char']} {asset['name']}",
@@ -1274,7 +1346,7 @@ def create_legend_panel():
     """创建图例面板 - 优化版"""
     # 使用 Text 构建更灵活的布局
     text = Text()
-    
+
     # 第一行：敌人图例
     enemies = [
         (GAME_ASSETS["enemy_slime"], "史莱姆"),
@@ -1285,7 +1357,7 @@ def create_legend_panel():
         text.append(asset["char"], style=asset["style"])
         text.append(f"{name} ", style="dim")
     text.append("\n")
-    
+
     # 第二行：更多敌人
     enemies2 = [
         (GAME_ASSETS["enemy_orc"], "兽人"),
@@ -1295,7 +1367,7 @@ def create_legend_panel():
         text.append(asset["char"], style=asset["style"])
         text.append(f"{name} ", style="dim")
     text.append("\n\n")
-    
+
     # 物品图例
     items = [
         (GAME_ASSETS["potion"], "血瓶"),
@@ -1309,7 +1381,7 @@ def create_legend_panel():
             text.append("\n")
         text.append(asset["char"], style=asset["style"])
         text.append(f"{name} ", style="dim")
-    
+
     return Panel(
         text,
         title="图例",
@@ -1321,10 +1393,8 @@ def create_legend_panel():
 
 
 def create_log(game):
-    """创建日志面板 - 优化版"""
     text = Text()
-    
-    # 图标映射
+
     type_icons = {
         "info": "",
         "success": "✓ ",
@@ -1332,239 +1402,225 @@ def create_log(game):
         "danger": "✗ ",
         "system": "ℹ ",
     }
-    
-    # 显示最近的消息
-    for msg_data in game.messages[-5:]:
+
+    for msg_data in game.messages[-4:]:
         if len(msg_data) == 4:
             msg, style, life, msg_type = msg_data
         else:
             msg, style, life = msg_data
             msg_type = "info"
-        
-        # 根据剩余生命周期调整透明度
-        max_life = {"danger": 250, "success": 200, "warning": 180, "system": 120}.get(msg_type, 150)
+
+        max_life = {"danger": 250, "success": 200, "warning": 180, "system": 120}.get(
+            msg_type, 150
+        )
         alpha = life / max_life if max_life > 0 else 1.0
-        
         icon = type_icons.get(msg_type, "")
-        
+
         if alpha > 0.6:
-            text.append(f"{icon}{msg}\n", style=f"bold {style}")
+            text.append(f"{icon}{msg}  ", style=f"bold {style}")
         elif alpha > 0.3:
-            text.append(f"{icon}{msg}\n", style=style)
+            text.append(f"{icon}{msg}  ", style=style)
         else:
-            text.append(f"{icon}{msg}\n", style=f"dim {style}")
-    
-    # 命令模式提示
+            text.append(f"{icon}{msg}  ", style=f"dim {style}")
+
     if game.cmd_mode:
-        text.append("\n")
-        text.append("> ", style="bold yellow")
-        # 显示输入内容和光标
+        text.append("\n> ", style="bold yellow")
         if game.cmd_buffer:
             text.append(game.cmd_buffer)
-            # 添加闪烁光标效果（使用不同颜色模拟闪烁）
-            cursor_char = "█" if game.frame % 10 < 5 else "▌"
-            text.append(cursor_char, style="bold yellow")
+            cursor = "█" if game.frame % 10 < 5 else "▌"
+            text.append(cursor, style="bold yellow")
         else:
-            text.append("█", style="bold yellow")  # 空输入时的光标
+            text.append("█", style="bold yellow")
         if game.cmd_suggestions and game.cmd_buffer:
-            text.append("\n")
-            for i, sugg in enumerate(game.cmd_suggestions[:4]):
+            text.append("  ", style="dim")
+            for i, sugg in enumerate(game.cmd_suggestions[:3]):
                 if i > 0:
                     text.append(" ", style="dim")
                 text.append(f"/{sugg}", style="dim cyan")
-        # 提示如何退出
-        text.append("\n")
-        text.append("Enter", style="dim yellow")
-        text.append("执行 ", style="dim")
-        text.append("Ctrl+X", style="dim yellow")
-        text.append("退出", style="dim")
+        text.append("  Enter执行 Ctrl+X退出", style="dim")
     else:
-        # 底部快捷提示
-        text.append("\n")
-        hints = [
-            ("?", "帮助"),
-            ("Ctrl+X", "命令"),
-            ("Ctrl+P", "命令面板"),
-            ("B", "商店"),
-            ("P", "暂停"),
-        ]
-        for hint_key, desc in hints:
-            text.append(f"{hint_key}", style="dim yellow")
-            text.append(f"{desc} ", style="dim")
-    
+        text.append("  ", style="dim")
+        text.append("?帮助 ", style="dim yellow")
+        text.append("Ctrl+X命令 ", style="dim")
+        text.append("B商店 ", style="dim")
+        text.append("P暂停", style="dim")
+
     return Panel(
-        text, 
-        title="日志", 
-        title_align="center", 
-        border_style="cyan", 
-        box=box.ROUNDED, 
-        height=8
+        text,
+        title="日志",
+        title_align="center",
+        border_style="cyan",
+        box=box.ROUNDED,
     )
 
 
 def render_game(game):
-    """渲染游戏界面 - 智能响应式布局"""
+    """渲染游戏界面 - 紧凑整合布局"""
     term_width = console.width
     term_height = console.height
-    
-    # 确保最小终端大小
-    term_width = max(term_width, 60)
-    term_height = max(term_height, 20)
-    
-    # 计算宽高比
-    aspect_ratio = term_width / term_height
-    
-    # 地图渲染后的实际尺寸 (2x2像素，所以高度是地图高度的2倍)
-    map_render_width = CONFIG.map_width * 2
-    map_render_height = CONFIG.map_height * 2
-    
-    # 根据终端尺寸选择布局模式
-    main_layout = Layout()
-    
-    # 边框颜色根据血量
+
+    term_width = max(term_width, 80)
+    term_height = max(term_height, 24)
+
+    map_w = CONFIG.map_width
+    map_h = CONFIG.map_height
+
     hp_ratio = game.player.hp / game.player.max_hp
     border_color = "green" if hp_ratio > 0.6 else "yellow" if hp_ratio > 0.3 else "red"
-    
-    # 判断布局模式
-    is_ultrawide = aspect_ratio > 2.0  # 超宽屏
-    is_wide = aspect_ratio > 1.6       # 宽屏
-    is_narrow = aspect_ratio < 1.2     # 窄屏
-    
-    if is_ultrawide:
-        # 超宽屏：三栏布局 - 地图 | 状态+图例 | 日志
-        main_layout.split_row(
-            Layout(Panel(
-                render_map(game),
-                title=f"第 {game.player.floor} 层",
-                title_align="center",
-                border_style=border_color,
-                box=box.ROUNDED,
-                padding=(0, 0),
-            ), ratio=map_render_width + 4),
-            Layout(create_side_panel(game), ratio=35),
-            Layout(Panel(
-                create_log_content(game),
-                title="日志",
-                title_align="center",
-                border_style="cyan",
-                box=box.ROUNDED,
-            ), ratio=term_width - map_render_width - 39),
-        )
-    elif is_narrow or term_width < 100:
-        # 窄屏或小平：堆叠布局
-        map_h = min(map_render_height + 4, int(term_height * 0.6))
-        stats_h = 4
-        log_h = term_height - map_h - stats_h
-        
-        main_layout.split_column(
-            Layout(Panel(
-                render_map(game),
-                title=f"第 {game.player.floor} 层",
-                title_align="center",
-                border_style=border_color,
-                box=box.ROUNDED,
-                padding=(0, 0),
-            ), size=map_h),
-            Layout(create_compact_stats(game), size=stats_h),
-            Layout(create_log(game), size=log_h),
-        )
-    else:
-        # 标准宽屏：地图 | 侧边栏
-        top = Layout()
-        top.split_row(
-            Layout(Panel(
-                render_map(game),
-                title=f"第 {game.player.floor} 层",
-                title_align="center",
-                border_style=border_color,
-                box=box.ROUNDED,
-                padding=(0, 0),
-            ), ratio=map_render_width + 4),
-            Layout(create_side_panel(game), ratio=term_width - map_render_width - 6),
-        )
-        
-        main_layout.split_column(
-            Layout(top, ratio=term_height - 8),
-            Layout(create_log(game), size=8),
-        )
 
-    # 覆盖层处理（升级、游戏结束、商店、暂停）
+    sidebar_w = 28
+    map_area_w = max(term_width - sidebar_w - 3, map_w + 4)
+
+    main_layout = Layout()
+
+    top = Layout()
+    top.split_row(
+        Layout(
+            Panel(
+                render_map(game),
+                title=f"第 {game.player.floor} 层",
+                title_align="center",
+                border_style=border_color,
+                box=box.ROUNDED,
+                padding=(0, 0),
+            ),
+            ratio=map_area_w,
+        ),
+        Layout(create_integrated_sidebar(game), ratio=sidebar_w),
+    )
+
+    log_h = min(8, max(5, term_height // 5))
+    main_layout.split_column(
+        Layout(top, ratio=term_height - log_h - 1),
+        Layout(create_log(game), size=log_h),
+    )
+
     if game.state == "upgrading":
         up = create_upgrade(game)
         if up:
-            # 创建覆盖层布局
-            overlay_layout = Layout()
-            overlay_layout.split_column(
+            overlay = Layout()
+            overlay.split_column(
                 Layout(),
                 Layout(Align.center(up, vertical="middle"), size=20),
                 Layout(),
             )
-            main_layout = overlay_layout
-
+            main_layout = overlay
     elif game.state == "game_over":
         go = create_gameover(game)
         if go:
-            overlay_layout = Layout()
-            overlay_layout.split_column(
+            overlay = Layout()
+            overlay.split_column(
                 Layout(),
                 Layout(Align.center(go, vertical="middle"), size=16),
                 Layout(),
             )
-            main_layout = overlay_layout
-    
+            main_layout = overlay
     elif game.shop_open:
         shop = create_shop(game)
         if shop:
-            overlay_layout = Layout()
-            overlay_layout.split_column(
+            overlay = Layout()
+            overlay.split_column(
                 Layout(),
                 Layout(Align.center(shop, vertical="middle"), size=16),
                 Layout(),
             )
-            main_layout = overlay_layout
-    
+            main_layout = overlay
     elif game.cmd_panel_open:
         panel = create_commands_panel(game)
         if panel:
-            overlay_layout = Layout()
-            overlay_layout.split_column(
+            overlay = Layout()
+            overlay.split_column(
                 Layout(),
                 Layout(Align.center(panel, vertical="middle"), size=20),
                 Layout(),
             )
-            main_layout = overlay_layout
-    
+            main_layout = overlay
     elif game.paused:
         pause = create_pause_overlay()
         if pause:
-            overlay_layout = Layout()
-            overlay_layout.split_column(
+            overlay = Layout()
+            overlay.split_column(
                 Layout(),
                 Layout(Align.center(pause, vertical="middle"), size=7),
                 Layout(),
             )
-            main_layout = overlay_layout
-    
+            main_layout = overlay
+
     return main_layout
 
 
-def create_side_panel(game):
-    """创建侧边栏面板 - 根据状态显示不同内容"""
+def create_integrated_sidebar(game):
+    """创建整合的侧边栏（状态+图例+快捷提示）"""
     if game.show_help:
         return create_help_panel()
-    
-    side = Layout()
-    side.split_column(
-        Layout(create_stats(game), size=14),
-        Layout(create_legend_panel()),
+
+    p = game.player
+    char_key = CHARACTERS[CONFIG.char_set]
+    asset = GAME_ASSETS[char_key]
+
+    hp_ratio = p.hp / p.max_hp
+    if hp_ratio > 0.6:
+        border_color = "green"
+        hp_style = "green"
+    elif hp_ratio > 0.3:
+        border_color = "yellow"
+        hp_style = "yellow"
+    else:
+        border_color = "red"
+        hp_style = "red bold blink"
+
+    content = Text()
+
+    content.append(f"{asset['char']} ", style=asset["style"])
+    content.append(f"{asset['name']}\n", style="bold white")
+    content.append(f"Lv {p.level}\n\n", style="yellow")
+
+    content.append("HP ", style="white")
+    content.append(f"{p.hp}/{p.max_hp}\n", style=hp_style)
+    content.append("ATK ", style="white")
+    content.append(f"{p.atk}\n", style="red")
+    content.append("EXP ", style="white")
+    content.append(f"{p.exp}/{p.exp_next}\n", style="cyan")
+    content.append("G ", style="white")
+    content.append(f"{p.gold}\n\n", style="yellow")
+
+    content.append(f"DEF:{p.defense} REG:{p.regen}\n", style="dim")
+    content.append(f"LS:{p.lifesteal}% CRT:{p.crit}%\n\n", style="dim")
+
+    minutes = int(p.play_time // 60)
+    seconds = int(p.play_time % 60)
+    content.append(f"⏱ {minutes}:{seconds:02d}\n", style="dim cyan")
+    content.append("─" * 12 + "\n\n", style="dim")
+
+    content.append("图例:\n", style="bold white")
+    content.append(
+        f"{GAME_ASSETS['enemy_slime']['char']}史 {GAME_ASSETS['enemy_goblin']['char']}哥 ",
+        style="dim",
     )
-    return side
+    content.append(
+        f"{GAME_ASSETS['enemy_skeleton']['char']}骷 {GAME_ASSETS['enemy_orc']['char']}兽\n",
+        style="dim",
+    )
+    content.append(
+        f"{GAME_ASSETS['potion']['char']}血 {GAME_ASSETS['gold']['char']}金 ",
+        style="dim",
+    )
+    content.append(f"{GAME_ASSETS['exit']['char']}出\n\n", style="dim")
+
+    content.append("WASD移动 B商店", style="dim")
+
+    return Panel(
+        content,
+        border_style=border_color,
+        box=box.ROUNDED,
+        padding=(1, 1),
+    )
 
 
 def create_log_content(game):
     """创建日志内容（用于分离面板和内容）"""
     text = Text()
-    
+
     type_icons = {
         "info": "",
         "success": "✓ ",
@@ -1572,25 +1628,27 @@ def create_log_content(game):
         "danger": "✗ ",
         "system": "ℹ ",
     }
-    
+
     for msg_data in game.messages[-6:]:
         if len(msg_data) == 4:
             msg, style, life, msg_type = msg_data
         else:
             msg, style, life = msg_data
             msg_type = "info"
-        
-        max_life = {"danger": 250, "success": 200, "warning": 180, "system": 120}.get(msg_type, 150)
+
+        max_life = {"danger": 250, "success": 200, "warning": 180, "system": 120}.get(
+            msg_type, 150
+        )
         alpha = life / max_life if max_life > 0 else 1.0
         icon = type_icons.get(msg_type, "")
-        
+
         if alpha > 0.6:
             text.append(f"{icon}{msg}\n", style=f"bold {style}")
         elif alpha > 0.3:
             text.append(f"{icon}{msg}\n", style=style)
         else:
             text.append(f"{icon}{msg}\n", style=f"dim {style}")
-    
+
     return text
 
 
@@ -1598,11 +1656,11 @@ def create_shop(game):
     """创建商店界面"""
     if not game.shop_open:
         return None
-    
+
     text = Text()
     text.append("💰 金币: ", style="bold yellow")
     text.append(f"{game.player.gold}\n\n", style="yellow")
-    
+
     for i, item in enumerate(game.shop_items):
         prefix = "> " if i == game.shop_sel else "  "
         can_afford = game.player.gold >= item.price
@@ -1611,7 +1669,7 @@ def create_shop(game):
         text.append(f"{item.icon} {item.name}", style="bold")
         text.append(f" - {item.price}G\n", style=price_color)
         text.append(f"      {item.desc}\n", style="dim white")
-    
+
     # 底部提示
     text.append("\n")
     text.append("W/S", style="dim")
@@ -1622,7 +1680,7 @@ def create_shop(game):
     text.append("快捷购买 ", style="dim")
     text.append("ESC", style="dim")
     text.append("关闭", style="dim")
-    
+
     return Panel(
         Align.center(text, vertical="middle"),
         title="商店",
@@ -1667,18 +1725,21 @@ def create_commands_panel(game):
         ("god", "无敌模式(调试)", "/god"),
         ("next", "进入下一层(调试)", "/next"),
     ]
-    
+
     text = Text()
     text.append("Commands\n\n", style="bold cyan")
-    
+
     # 搜索/过滤
     filter_text = game.cmd_buffer.lower()
-    filtered_cmds = [(name, desc, usage) for name, desc, usage in cmd_list 
-                     if filter_text in name.lower() or filter_text in desc.lower()]
-    
+    filtered_cmds = [
+        (name, desc, usage)
+        for name, desc, usage in cmd_list
+        if filter_text in name.lower() or filter_text in desc.lower()
+    ]
+
     if not filtered_cmds:
         filtered_cmds = cmd_list
-    
+
     # 显示命令列表
     for i, (name, desc, usage) in enumerate(filtered_cmds[:8]):  # 最多显示8个
         prefix = "> " if i == game.cmd_panel_sel else "  "
@@ -1689,7 +1750,7 @@ def create_commands_panel(game):
         else:
             text.append(f"{prefix}{name:<12} ", style="cyan")
             text.append(f"{desc}\n", style="dim")
-    
+
     # 底部提示
     text.append("\n")
     text.append("↑↓", style="dim")
@@ -1700,7 +1761,7 @@ def create_commands_panel(game):
     text.append("关闭 ", style="dim")
     text.append("Type", style="dim")
     text.append("搜索", style="dim")
-    
+
     return Panel(
         Align.center(text, vertical="middle"),
         title="Commands",
@@ -1727,7 +1788,12 @@ def create_help_panel():
     text.append("/config 看配置\n")
     text.append("/shop 打开商店")
     return Panel(
-        text, title="帮助", title_align="center", border_style="yellow", box=box.ROUNDED, height=15
+        text,
+        title="帮助",
+        title_align="center",
+        border_style="yellow",
+        box=box.ROUNDED,
+        height=15,
     )
 
 
@@ -1735,7 +1801,7 @@ def create_upgrade(game):
     """创建升级界面 - 优化版"""
     if game.state != "upgrading":
         return None
-    
+
     # 主升级选择区
     upgrade_text = Text()
     upgrade_text.append("升级！\n\n", style="bold yellow")
@@ -1747,7 +1813,7 @@ def create_upgrade(game):
         upgrade_text.append(f"{u.icon} {u.name}", style=f"{text_style} {color}")
         upgrade_text.append(f" [{u.get_rarity_name()}]\n", style=f"dim {color}")
         upgrade_text.append(f"      {u.desc}\n", style="dim white")
-    
+
     # 当前属性区
     p = game.player
     stats_text = Text()
@@ -1758,9 +1824,7 @@ def create_upgrade(game):
     stats_text.append(f"REG:  {p.regen}\n", style="dim")
     stats_text.append(f"LS:   {p.lifesteal}%\n", style="dim")
     stats_text.append(f"CRT:  {p.crit}%", style="dim")
-    
-    # 使用 Group 而不是 Layout，避免布局问题
-    from rich.console import Group
+
     content = Group(
         Text(),  # 空行
         upgrade_text,
@@ -1769,7 +1833,7 @@ def create_upgrade(game):
         Text(),  # 空行
         Text("WASD/方向键切换, Enter/1-3确认", style="dim"),
     )
-    
+
     return Panel(
         Align.center(content, vertical="middle"),
         title="选择能力",
@@ -1786,37 +1850,55 @@ def create_gameover(game):
     # 计算评分
     score = p.floor * 100 + p.kills * 10 + p.level * 50 + p.gold
     if p.kills > 0:
-        rating = "⭐⭐⭐ SSS" if score > 2000 else "⭐⭐⭐ SS" if score > 1500 else "⭐⭐⭐ S" if score > 1000 else "⭐⭐ A" if score > 500 else "⭐ B" if score > 200 else "C"
+        rating = (
+            "⭐⭐⭐ SSS"
+            if score > 2000
+            else "⭐⭐⭐ SS"
+            if score > 1500
+            else "⭐⭐⭐ S"
+            if score > 1000
+            else "⭐⭐ A"
+            if score > 500
+            else "⭐ B"
+            if score > 200
+            else "C"
+        )
     else:
         rating = "F"
-    
+
     # 游戏时长格式化
     minutes = int(p.play_time // 60)
     seconds = int(p.play_time % 60)
     time_str = f"{minutes}分{seconds}秒"
-    
+
     text = Text()
     text.append("GAME OVER\n\n", style="bold red")
     text.append(f"评分: {rating}\n\n", style="bold yellow")
-    
+
     # 使用表格形式展示数据
     text.append(f"  到达层数:  {p.floor}\n", style="white")
     text.append(f"  击杀敌人:  {p.kills}\n", style="white")
     text.append(f"  角色等级:  {p.level}\n", style="white")
     text.append(f"  获得金币:  {p.gold}\n", style="white")
     text.append(f"  游戏时长:  {time_str}\n\n", style="white")
-    
+
     # 敌人击杀详情
     if p.enemy_kills:
         text.append("击杀统计:\n", style="dim")
-        enemy_names = {"slime": "史莱姆", "goblin": "哥布林", "skeleton": "骷髅", "orc": "兽人", "shadow": "暗影"}
+        enemy_names = {
+            "slime": "史莱姆",
+            "goblin": "哥布林",
+            "skeleton": "骷髅",
+            "orc": "兽人",
+            "shadow": "暗影",
+        }
         for enemy, count in sorted(p.enemy_kills.items()):
             name = enemy_names.get(enemy, enemy)
             text.append(f"  {name}: {count}  ", style="dim")
         text.append("\n\n")
-    
+
     text.append("按任意键退出", style="dim")
-    
+
     return Panel(
         Align.center(text, vertical="middle"),
         title="[bold red]游戏结束[/]",
@@ -1831,25 +1913,25 @@ def create_modern_title(frame=0):
     """创建现代化的启动界面"""
     term_width = console.width
     term_height = console.height
-    
+
     # 动态标题动画
     chars = ["█", "▓", "▒", "░"]
     char = chars[frame % len(chars)]
-    
+
     # Logo ASCII艺术
     logo_lines = [
         "",
-        f"    {char*4}  {char*4}  {char*4}  {char*4}  {char*3}   {char*3}  {char*4}   {char*4}  {char*3} ",
-        f"    {char*2}  {char*2}  {char*2}      {char*2}  {char*2}  {char*2}  {char*2}     {char*2}  {char*2}  {char*2} {char*2}",
-        f"    {char*4}  {char*2}  {char*4}  {char*4}  {char*2} {char*2} {char*2}  {char*3}   {char*3}  {char*2}  {char*2}",
-        f"    {char*2}  {char*2}  {char*2}      {char*2}  {char*2}  {char*2}  {char*2}     {char*2}  {char*2} {char*2} ",
-        f"    {char*4}  {char*4}  {char*4}  {char*2}   {char*3}   {char*3}  {char*4}   {char*4}  {char*2}  {char*2}",
+        f"    {char * 4}  {char * 4}  {char * 4}  {char * 4}  {char * 3}   {char * 3}  {char * 4}   {char * 4}  {char * 3} ",
+        f"    {char * 2}  {char * 2}  {char * 2}      {char * 2}  {char * 2}  {char * 2}  {char * 2}     {char * 2}  {char * 2}  {char * 2} {char * 2}",
+        f"    {char * 4}  {char * 2}  {char * 4}  {char * 4}  {char * 2} {char * 2} {char * 2}  {char * 3}   {char * 3}  {char * 2}  {char * 2}",
+        f"    {char * 2}  {char * 2}  {char * 2}      {char * 2}  {char * 2}  {char * 2}  {char * 2}     {char * 2}  {char * 2} {char * 2} ",
+        f"    {char * 4}  {char * 4}  {char * 4}  {char * 2}   {char * 3}   {char * 3}  {char * 4}   {char * 4}  {char * 2}  {char * 2}",
         "",
         "                    P I X E L   D U N G E O N",
         "                         像素地牢 v1.0",
         "",
     ]
-    
+
     # 特性列表
     features = [
         ("♛", "bright_green", "4种角色", "勇者·法师·刺客·圣骑"),
@@ -1858,7 +1940,7 @@ def create_modern_title(frame=0):
         ("★", "bright_magenta", "升级系统", "12种能力自由搭配"),
         ("🛡", "bright_yellow", "商店系统", "购买道具强化角色"),
     ]
-    
+
     # 操作说明
     controls = [
         ("WASD", "移动攻击"),
@@ -1869,7 +1951,7 @@ def create_modern_title(frame=0):
         ("/", "命令模式"),
         ("?", "帮助面板"),
     ]
-    
+
     # 构建布局
     left_content = Text()
     left_content.append("游戏特色\n", style="bold yellow underline")
@@ -1878,14 +1960,14 @@ def create_modern_title(frame=0):
         left_content.append(f"{icon} ", style=color)
         left_content.append(f"{title}", style="bold")
         left_content.append(f"\n   {desc}\n", style="dim")
-    
+
     right_content = Text()
     right_content.append("操作指南\n", style="bold cyan underline")
     right_content.append("─" * 20 + "\n", style="dim")
     for key, action in controls:
         right_content.append(f"{key:>6}", style="bold white on dark_blue")
         right_content.append(f"  {action}\n", style="white")
-    
+
     # 角色预览
     char_content = Text()
     char_content.append("选择角色 ", style="bold")
@@ -1901,7 +1983,7 @@ def create_modern_title(frame=0):
         char_content.append(f"{icon}", style=f"bold {color}")
         char_content.append(f" {name:6}", style="bold")
         char_content.append(f" {desc}\n", style="dim")
-    
+
     # 创建面板
     logo_text = Text("\n".join(logo_lines), style="cyan")
     logo_panel = Panel(
@@ -1909,11 +1991,21 @@ def create_modern_title(frame=0):
         border_style="cyan",
         box=box.DOUBLE if frame % 2 == 0 else box.ROUNDED,
     )
-    
-    left_panel = Panel(left_content, border_style="yellow", box=box.ROUNDED, title="[yellow]✨ 特色[/]")
-    right_panel = Panel(right_content, border_style="cyan", box=box.ROUNDED, title="[cyan]⌨ 操作[/]")
-    char_panel = Panel(char_content, border_style="green", box=box.ROUNDED, title="[green]🎭 角色[/]", width=30)
-    
+
+    left_panel = Panel(
+        left_content, border_style="yellow", box=box.ROUNDED, title="[yellow]✨ 特色[/]"
+    )
+    right_panel = Panel(
+        right_content, border_style="cyan", box=box.ROUNDED, title="[cyan]⌨ 操作[/]"
+    )
+    char_panel = Panel(
+        char_content,
+        border_style="green",
+        box=box.ROUNDED,
+        title="[green]🎭 角色[/]",
+        width=30,
+    )
+
     # 底部提示
     footer = Text()
     footer.append("\n  按 ", style="dim")
@@ -1921,7 +2013,7 @@ def create_modern_title(frame=0):
     footer.append(" 开始游戏  ·  ", style="dim")
     footer.append("--help", style="dim cyan")
     footer.append(" 查看帮助", style="dim")
-    
+
     # 组合布局
     info_layout = Layout()
     info_layout.split_row(
@@ -1929,19 +2021,19 @@ def create_modern_title(frame=0):
         Layout(right_panel, ratio=2),
         Layout(char_panel, ratio=1),
     )
-    
+
     content_layout = Layout()
     content_layout.split_column(
         Layout(logo_panel, size=len(logo_lines) + 2),
         Layout(info_layout),
     )
-    
+
     main_layout = Layout()
     main_layout.split_column(
         Layout(content_layout),
         Layout(footer, size=2),
     )
-    
+
     return main_layout
 
 
@@ -1950,7 +2042,7 @@ def show_title_screen():
     input_handler = InputHandler()
     input_handler.start()
     should_exit = False
-    
+
     try:
         with Live(screen=True, refresh_per_second=10) as live:
             frame = 0
@@ -1958,12 +2050,12 @@ def show_title_screen():
                 frame += 1
                 layout = create_modern_title(frame)
                 live.update(layout)
-                
+
                 # 检查按键
                 key = input_handler.get_key()
                 if key:
                     break
-                
+
                 time.sleep(0.1)
     except KeyboardInterrupt:
         # Ctrl+C退出
@@ -1971,7 +2063,7 @@ def show_title_screen():
     finally:
         input_handler.stop()
         console.clear()
-    
+
     return not should_exit  # True=继续, False=退出
 
 
@@ -2029,7 +2121,7 @@ def main():
                         if key in ("p", "P"):
                             game.toggle_pause()
                         continue
-                    
+
                     # 处理商店状态
                     if game.shop_open:
                         if key == "\x1b":  # ESC关闭商店
@@ -2048,7 +2140,7 @@ def main():
                         elif key in ("s", "S") or key == "DOWN":
                             game.shop_sel = (game.shop_sel + 1) % len(game.shop_items)
                         continue
-                    
+
                     # Commands面板处理
                     # Commands面板处理
                     if game.cmd_panel_open:
@@ -2056,9 +2148,22 @@ def main():
                             game.cmd_panel_open = False
                             game.cmd_buffer = ""
                         elif key == "\r":  # Enter执行选中命令
-                            cmd_list = ["help", "fps", "light", "particle", "char", "config", "shop", "heal", "god", "next"]
+                            cmd_list = [
+                                "help",
+                                "fps",
+                                "light",
+                                "particle",
+                                "char",
+                                "config",
+                                "shop",
+                                "heal",
+                                "god",
+                                "next",
+                            ]
                             if game.cmd_panel_sel < len(cmd_list):
-                                result = game.commands.execute("/" + cmd_list[game.cmd_panel_sel])
+                                result = game.commands.execute(
+                                    "/" + cmd_list[game.cmd_panel_sel]
+                                )
                                 if result:
                                     game.add_msg(result, "yellow")
                             game.cmd_panel_open = False
@@ -2075,7 +2180,7 @@ def main():
                             # 搜索过滤
                             game.cmd_buffer += key
                         continue
-                    
+
                     # 命令模式处理 - Ctrl+X切换
                     if game.cmd_mode:
                         if key == "\x18":  # Ctrl+X 切换回游戏
@@ -2108,16 +2213,18 @@ def main():
                     elif game.state == "playing":
                         if key in ("q", "Q"):
                             # 退出确认（容错设计）
-                            game.add_msg("按 Q 再次确认退出，或其他键取消", "yellow", "warning")
+                            game.add_msg(
+                                "按 Q 再次确认退出，或其他键取消", "yellow", "warning"
+                            )
                             live.update(render_game(game))
-                            
+
                             # 等待确认
                             confirm_key = None
                             while confirm_key is None:
                                 confirm_key = input_handler.get_key()
                                 if confirm_key is None:
                                     time.sleep(0.05)
-                            
+
                             if confirm_key in ("q", "Q"):
                                 break
                             else:
@@ -2127,12 +2234,18 @@ def main():
                         elif key == "/":  # / 进入传统命令模式
                             game.cmd_mode = True
                             game.cmd_buffer = ""
-                            game.add_msg("命令模式，输入 /help 查看帮助，Ctrl+X 退出", "cyan", "system")
+                            game.add_msg(
+                                "命令模式，输入 /help 查看帮助，Ctrl+X 退出",
+                                "cyan",
+                                "system",
+                            )
                         elif key == "\x18":  # Ctrl+X 切换命令模式
                             game.cmd_mode = not game.cmd_mode
                             if game.cmd_mode:
                                 game.cmd_buffer = ""
-                                game.add_msg("进入命令模式，Ctrl+X 退出", "cyan", "system")
+                                game.add_msg(
+                                    "进入命令模式，Ctrl+X 退出", "cyan", "system"
+                                )
                             else:
                                 game.cmd_buffer = ""
                                 game.cmd_suggestions = []
@@ -2170,6 +2283,7 @@ def main():
                             game.sel_upgrade = (game.sel_upgrade + 1) % 3
                     elif game.state == "game_over":
                         time.sleep(0.3)
+                        game.running = False
                         break
 
                 # 渲染游戏界面
