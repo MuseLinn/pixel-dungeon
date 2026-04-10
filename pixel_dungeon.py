@@ -1447,42 +1447,36 @@ def create_log(game):
 
 
 def render_game(game):
-    """渲染游戏界面 - 自适应终端大小"""
+    """渲染游戏界面 - 智能响应式布局"""
     term_width = console.width
     term_height = console.height
     
     # 确保最小终端大小
-    term_width = max(term_width, 80)
-    term_height = max(term_height, 24)
+    term_width = max(term_width, 60)
+    term_height = max(term_height, 20)
     
-    # 地图区域宽度 = 地图格子数 * 2 (字符+空格) + 边框
-    map_content_width = CONFIG.map_width * 2
-    map_panel_width = map_content_width + 4  # 加上边框
+    # 计算宽高比
+    aspect_ratio = term_width / term_height
     
-    # 计算侧边栏可用空间
-    side_width = term_width - map_panel_width - 2
+    # 地图渲染后的实际尺寸 (2x2像素，所以高度是地图高度的2倍)
+    map_render_width = CONFIG.map_width * 2
+    map_render_height = CONFIG.map_height * 2
     
+    # 根据终端尺寸选择布局模式
     main_layout = Layout()
     
-    # 根据玩家状态改变边框颜色
+    # 边框颜色根据血量
     hp_ratio = game.player.hp / game.player.max_hp
-    if hp_ratio > 0.6:
-        border_color = "cyan"
-    elif hp_ratio > 0.3:
-        border_color = "yellow"
-    else:
-        border_color = "red"
+    border_color = "green" if hp_ratio > 0.6 else "yellow" if hp_ratio > 0.3 else "red"
     
-    # 如果终端太窄，使用紧凑布局
-    if side_width < 30 or term_height < 30:
-        # 窄终端模式
-        map_layout = Layout()
-        # 动态计算各区域大小
-        map_height = max(term_height - 10, 12)
-        stats_height = 3
-        log_height = term_height - map_height - stats_height
-        
-        map_layout.split_column(
+    # 判断布局模式
+    is_ultrawide = aspect_ratio > 2.0  # 超宽屏
+    is_wide = aspect_ratio > 1.6       # 宽屏
+    is_narrow = aspect_ratio < 1.2     # 窄屏
+    
+    if is_ultrawide:
+        # 超宽屏：三栏布局 - 地图 | 状态+图例 | 日志
+        main_layout.split_row(
             Layout(Panel(
                 render_map(game),
                 title=f"第 {game.player.floor} 层",
@@ -1490,50 +1484,52 @@ def render_game(game):
                 border_style=border_color,
                 box=box.ROUNDED,
                 padding=(0, 0),
-            ), size=map_height),
-            Layout(create_compact_stats(game), size=stats_height),
-            Layout(create_log(game), size=log_height),
+            ), ratio=map_render_width + 4),
+            Layout(create_side_panel(game), ratio=35),
+            Layout(Panel(
+                create_log_content(game),
+                title="日志",
+                title_align="center",
+                border_style="cyan",
+                box=box.ROUNDED,
+            ), ratio=term_width - map_render_width - 39),
         )
-        main_layout = map_layout
-    else:
-        # 正常布局 - 使用比例而非固定大小
-        top = Layout()
-        top.split_row(
-            Layout(name="map", ratio=map_panel_width),
-            Layout(name="side", ratio=side_width)
-        )
-
-        map_panel = Panel(
-            render_map(game),
-            title=f"第 {game.player.floor} 层",
-            title_align="center",
-            border_style=border_color,
-            box=box.ROUNDED,
-            padding=(0, 0),
-        )
-        top["map"].update(map_panel)
-
-        side = Layout()
-        if game.show_help:
-            side.update(create_help_panel())
-        else:
-            # 动态计算状态面板高度
-            side.split_column(
-                Layout(create_stats(game), size=13),
-                Layout(create_legend_panel()),
-            )
-        top["side"].update(side)
-
-        bottom = Layout()
-        bottom.update(create_log(game))
-
-        # 动态计算比例
-        top_ratio = max(term_height - 8, term_height * 0.75)
-        bottom_ratio = term_height - top_ratio
+    elif is_narrow or term_width < 100:
+        # 窄屏或小平：堆叠布局
+        map_h = min(map_render_height + 4, int(term_height * 0.6))
+        stats_h = 4
+        log_h = term_height - map_h - stats_h
         
         main_layout.split_column(
-            Layout(top, ratio=int(top_ratio)),
-            Layout(bottom, ratio=int(bottom_ratio))
+            Layout(Panel(
+                render_map(game),
+                title=f"第 {game.player.floor} 层",
+                title_align="center",
+                border_style=border_color,
+                box=box.ROUNDED,
+                padding=(0, 0),
+            ), size=map_h),
+            Layout(create_compact_stats(game), size=stats_h),
+            Layout(create_log(game), size=log_h),
+        )
+    else:
+        # 标准宽屏：地图 | 侧边栏
+        top = Layout()
+        top.split_row(
+            Layout(Panel(
+                render_map(game),
+                title=f"第 {game.player.floor} 层",
+                title_align="center",
+                border_style=border_color,
+                box=box.ROUNDED,
+                padding=(0, 0),
+            ), ratio=map_render_width + 4),
+            Layout(create_side_panel(game), ratio=term_width - map_render_width - 6),
+        )
+        
+        main_layout.split_column(
+            Layout(top, ratio=term_height - 8),
+            Layout(create_log(game), size=8),
         )
 
     # 覆盖层处理（升级、游戏结束、商店、暂停）
@@ -1594,6 +1590,52 @@ def render_game(game):
             main_layout = overlay_layout
     
     return main_layout
+
+
+def create_side_panel(game):
+    """创建侧边栏面板 - 根据状态显示不同内容"""
+    if game.show_help:
+        return create_help_panel()
+    
+    side = Layout()
+    side.split_column(
+        Layout(create_stats(game), size=14),
+        Layout(create_legend_panel()),
+    )
+    return side
+
+
+def create_log_content(game):
+    """创建日志内容（用于分离面板和内容）"""
+    text = Text()
+    
+    type_icons = {
+        "info": "",
+        "success": "✓ ",
+        "warning": "⚠ ",
+        "danger": "✗ ",
+        "system": "ℹ ",
+    }
+    
+    for msg_data in game.messages[-6:]:
+        if len(msg_data) == 4:
+            msg, style, life, msg_type = msg_data
+        else:
+            msg, style, life = msg_data
+            msg_type = "info"
+        
+        max_life = {"danger": 250, "success": 200, "warning": 180, "system": 120}.get(msg_type, 150)
+        alpha = life / max_life if max_life > 0 else 1.0
+        icon = type_icons.get(msg_type, "")
+        
+        if alpha > 0.6:
+            text.append(f"{icon}{msg}\n", style=f"bold {style}")
+        elif alpha > 0.3:
+            text.append(f"{icon}{msg}\n", style=style)
+        else:
+            text.append(f"{icon}{msg}\n", style=f"dim {style}")
+    
+    return text
 
 
 def create_shop(game):
