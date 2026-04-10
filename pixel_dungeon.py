@@ -322,12 +322,13 @@ class CommandHandler:
             return f"[yellow]未知命令: /{cmd}[/]\n[dim]输入 /help 查看所有命令[/]"
 
     def cmd_help(self, args):
-        help_text = "[bold yellow]📖 可用命令[/]\n\n"
+        """返回帮助信息"""
+        lines = ["📖 可用命令\n"]
         for cmd, desc in self.COMMANDS.items():
             if len(cmd) > 1:
-                help_text += f"  [bright_cyan]/{cmd}[/] - {desc}\n"
-        help_text += "\n[dim]提示: 输入 / 后按 TAB 自动补全[/]"
-        return help_text
+                lines.append(f"  /{cmd} - {desc}")
+        lines.append("\n提示: 输入 / 或 Ctrl+X 进入命令模式，按 TAB 自动补全")
+        return "\n".join(lines)
 
     def cmd_quit(self, args):
         self.game.running = False
@@ -375,14 +376,16 @@ class CommandHandler:
 
     def cmd_config(self, args):
         current = GAME_ASSETS[CHARACTERS[CONFIG.char_set]]
-        return f"""[bold cyan]⚙️ 当前配置[/]
-
-角色: {current["name"]} {current["char"]}
-FPS: {CONFIG.fps}
-光照: {"✅ 开启" if CONFIG.lighting else "❌ 关闭"}
-粒子: {"✅ 开启" if CONFIG.particles else "❌ 关闭"}
-地图: {CONFIG.map_width}x{CONFIG.map_height}
-"""
+        lines = [
+            "⚙️ 当前配置",
+            "",
+            f"角色: {current['name']} {current['char']}",
+            f"FPS: {CONFIG.fps}",
+            f"光照: {'开启' if CONFIG.lighting else '关闭'}",
+            f"粒子: {'开启' if CONFIG.particles else '关闭'}",
+            f"地图: {CONFIG.map_width}x{CONFIG.map_height}",
+        ]
+        return "\n".join(lines)
 
     def cmd_shop(self, args):
         self.game.open_shop()
@@ -456,6 +459,8 @@ class Game:
         self.shop_sel = 0  # 商店选中项
         self.start_time = time.time()  # 游戏开始时间
         self.commands = CommandHandler(self)
+        self.cmd_panel_open = False  # Commands面板是否打开
+        self.cmd_panel_sel = 0  # Commands面板选中项
         self.init_map()
 
     def init_map(self):
@@ -1372,6 +1377,17 @@ def render_game(game):
             )
             main_layout = overlay_layout
     
+    elif game.cmd_panel_open:
+        panel = create_commands_panel(game)
+        if panel:
+            overlay_layout = Layout()
+            overlay_layout.split_column(
+                Layout(),
+                Layout(Align.center(panel, vertical="middle"), size=20),
+                Layout(),
+            )
+            main_layout = overlay_layout
+    
     elif game.paused:
         pause = create_pause_overlay()
         if pause:
@@ -1435,11 +1451,72 @@ def create_pause_overlay():
     text.append(" 继续游戏", style="dim")
     return Panel(
         Align.center(text, vertical="middle"),
-        title="[bold yellow]PAUSED[/]",
+        title="PAUSED",
+        title_align="center",
         border_style="yellow",
         box=box.DOUBLE,
         width=28,
         height=7,
+    )
+
+
+def create_commands_panel(game):
+    """创建Commands面板 - 类似OpenCode"""
+    # 获取所有可用命令
+    cmd_list = [
+        ("help", "显示帮助信息", "/help"),
+        ("fps", "设置帧率", "/fps [10-60]"),
+        ("light", "开关光照", "/light [on|off]"),
+        ("particle", "开关粒子", "/particle [on|off]"),
+        ("char", "切换角色", "/char [default|mage|rogue|paladin]"),
+        ("config", "显示当前配置", "/config"),
+        ("shop", "打开商店", "/shop"),
+        ("heal", "恢复生命(调试)", "/heal [数值]"),
+        ("god", "无敌模式(调试)", "/god"),
+        ("next", "进入下一层(调试)", "/next"),
+    ]
+    
+    text = Text()
+    text.append("Commands\n\n", style="bold cyan")
+    
+    # 搜索/过滤
+    filter_text = game.cmd_buffer.lower()
+    filtered_cmds = [(name, desc, usage) for name, desc, usage in cmd_list 
+                     if filter_text in name.lower() or filter_text in desc.lower()]
+    
+    if not filtered_cmds:
+        filtered_cmds = cmd_list
+    
+    # 显示命令列表
+    for i, (name, desc, usage) in enumerate(filtered_cmds[:8]):  # 最多显示8个
+        prefix = "> " if i == game.cmd_panel_sel else "  "
+        if i == game.cmd_panel_sel:
+            text.append(f"{prefix}{name:<12} ", style="bold cyan")
+            text.append(f"{desc}\n", style="white")
+            text.append(f"   用法: {usage}\n", style="dim")
+        else:
+            text.append(f"{prefix}{name:<12} ", style="cyan")
+            text.append(f"{desc}\n", style="dim")
+    
+    # 底部提示
+    text.append("\n")
+    text.append("↑↓", style="dim")
+    text.append("选择 ", style="dim")
+    text.append("Enter", style="dim")
+    text.append("执行 ", style="dim")
+    text.append("Esc", style="dim")
+    text.append("关闭 ", style="dim")
+    text.append("Type", style="dim")
+    text.append("搜索", style="dim")
+    
+    return Panel(
+        Align.center(text, vertical="middle"),
+        title="Commands",
+        title_align="center",
+        border_style="cyan",
+        box=box.DOUBLE,
+        width=60,
+        height=20,
     )
 
 
@@ -1677,9 +1754,10 @@ def create_modern_title(frame=0):
 
 
 def show_title_screen():
-    """现代化的启动界面"""
+    """现代化的启动界面，返回True表示继续游戏，False表示退出"""
     input_handler = InputHandler()
     input_handler.start()
+    should_exit = False
     
     try:
         with Live(screen=True, refresh_per_second=10) as live:
@@ -1696,11 +1774,13 @@ def show_title_screen():
                 
                 time.sleep(0.1)
     except KeyboardInterrupt:
-        # 优雅处理Ctrl+C
-        pass
+        # Ctrl+C退出
+        should_exit = True
     finally:
         input_handler.stop()
         console.clear()
+    
+    return not should_exit  # True=继续, False=退出
 
 
 def main():
@@ -1724,7 +1804,10 @@ def main():
     CONFIG.char_set = args.char
 
     if not args.skip_title:
-        show_title_screen()
+        if not show_title_screen():
+            # 用户选择退出
+            console.print("[dim]👋 已退出游戏[/]")
+            return
 
     game = Game()
     game.add_msg("♛ 欢迎来到像素地牢！", "cyan")
@@ -1774,6 +1857,28 @@ def main():
                             game.shop_sel = (game.shop_sel + 1) % len(game.shop_items)
                         continue
                     
+                    # Commands面板处理
+                    if game.cmd_panel_open:
+                        if key == "\x1b":  # ESC关闭
+                            game.cmd_panel_open = False
+                            game.cmd_buffer = ""
+                        elif key == "\r":  # Enter执行选中命令
+                            cmd_list = ["help", "fps", "light", "particle", "char", "config", "shop", "heal", "god", "next"]
+                            if game.cmd_panel_sel < len(cmd_list):
+                                result = game.commands.execute(cmd_list[game.cmd_panel_sel])
+                                if result:
+                                    game.add_msg(result, "yellow")
+                            game.cmd_panel_open = False
+                            game.cmd_buffer = ""
+                        elif key in ("w", "W") or key == "UP":
+                            game.cmd_panel_sel = max(0, game.cmd_panel_sel - 1)
+                        elif key in ("s", "S") or key == "DOWN":
+                            game.cmd_panel_sel = min(9, game.cmd_panel_sel + 1)
+                        elif len(key) == 1 and key.isprintable():
+                            # 搜索过滤
+                            game.cmd_buffer += key
+                        continue
+                    
                     if game.cmd_mode:
                         if key == "\r":
                             result = game.commands.execute(game.cmd_buffer)
@@ -1781,6 +1886,7 @@ def main():
                                 game.add_msg(result, "yellow")
                             game.cmd_buffer = ""
                             game.cmd_suggestions = []
+                            game.cmd_mode = False
                         elif key == "\x7f":
                             game.cmd_buffer = game.cmd_buffer[:-1]
                         elif key == "\x1b":
@@ -1810,8 +1916,12 @@ def main():
                                 game.add_msg("取消退出", "dim", "info")
                         elif key == "?":
                             game.show_help = not game.show_help
-                        elif key == "/":
+                        elif key == "/" or key == "\x18":  # / 或 Ctrl+X
                             game.cmd_mode = True
+                            game.cmd_buffer = ""
+                        elif key == "\x10":  # Ctrl+P 打开Commands面板
+                            game.cmd_panel_open = True
+                            game.cmd_panel_sel = 0
                             game.cmd_buffer = ""
                         elif key in ("b", "B"):
                             game.open_shop()
