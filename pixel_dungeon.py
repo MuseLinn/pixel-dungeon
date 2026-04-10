@@ -26,9 +26,9 @@ console = Console()
 
 class CONFIG:
     fps = 30
-    map_width = 30
-    map_height = 12
-    view_distance = 8
+    map_width = 20  # 调整为适合2x2像素渲染的大小
+    map_height = 10
+    view_distance = 6
     particle_limit = 30
     lighting = True
     particles = True
@@ -36,18 +36,120 @@ class CONFIG:
     char_set = "default"
 
 
+# 伪像素角色定义 - 使用2x2方块字符组合
+PIXEL_ASSETS = {
+    # 玩家角色 - 每个由4个字符组成2x2像素画
+    "player_default": {
+        "chars": [["▓", "▓"], ["▓", "░"]],
+        "name": "勇者",
+        "style": "bright_green",
+        "alt_chars": [["█", "▓"], ["▓", "▒"]]  # 动画帧
+    },
+    "player_mage": {
+        "chars": [["░", "▒"], ["▒", "█"]],
+        "name": "法师",
+        "style": "bright_cyan",
+        "alt_chars": [["▒", "░"], ["█", "▒"]]
+    },
+    "player_rogue": {
+        "chars": [["▒", "░"], ["█", "░"]],
+        "name": "刺客",
+        "style": "bright_red",
+        "alt_chars": [["░", "▒"], ["░", "█"]]
+    },
+    "player_paladin": {
+        "chars": [["█", "▓"], ["▓", "█"]],
+        "name": "圣骑",
+        "style": "bright_yellow",
+        "alt_chars": [["▓", "█"], ["█", "▓"]]
+    },
+    # 敌人
+    "enemy_slime": {
+        "chars": [["▒", "░"], ["░", "▒"]],
+        "name": "史莱姆",
+        "style": "green",
+        "alt_chars": [["░", "▒"], ["▒", "░"]]
+    },
+    "enemy_goblin": {
+        "chars": [["▓", "░"], ["▒", "▓"]],
+        "name": "哥布林",
+        "style": "yellow",
+        "alt_chars": [["░", "▓"], ["▓", "▒"]]
+    },
+    "enemy_skeleton": {
+        "chars": [["░", "░"], ["▒", "░"]],
+        "name": "骷髅",
+        "style": "white",
+        "alt_chars": [["▒", "░"], ["░", "▒"]]
+    },
+    "enemy_orc": {
+        "chars": [["▓", "▓"], ["▓", "░"]],
+        "name": "兽人",
+        "style": "red",
+        "alt_chars": [["█", "▓"], ["▓", "▓"]]
+    },
+    "enemy_shadow": {
+        "chars": [["░", " "], [" ", "░"]],
+        "name": "暗影",
+        "style": "magenta",
+        "alt_chars": [[" ", "░"], ["░", " "]]
+    },
+    # 地图元素
+    "wall": {
+        "chars": [["█", "█"], ["█", "█"]],
+        "name": "墙壁",
+        "style": "bright_black"
+    },
+    "wall_top": {
+        "chars": [["▀", "▀"], ["█", "█"]],
+        "name": "墙壁顶部",
+        "style": "bright_black"
+    },
+    "wall_side": {
+        "chars": [["█", "░"], ["█", "░"]],
+        "name": "墙壁侧面",
+        "style": "bright_black"
+    },
+    "floor": {
+        "chars": [["░", " "], [" ", "░"]],
+        "name": "地面",
+        "style": "dim white"
+    },
+    "floor_alt": {
+        "chars": [[" ", "▒"], ["▒", " "]],
+        "name": "地面变体",
+        "style": "dim white"
+    },
+    "potion": {
+        "chars": [["▄", "█"], ["▀", "▄"]],
+        "name": "生命药水",
+        "style": "bright_green"
+    },
+    "gold": {
+        "chars": [["◆", " "], [" ", "◆"]],
+        "name": "金币",
+        "style": "bright_yellow"
+    },
+    "exit": {
+        "chars": [["█", "█"], ["▀", "▀"]],
+        "name": "出口",
+        "style": "bright_cyan"
+    },
+}
+
+# 向后兼容 - 保留旧版单字符定义用于图例等简单显示
 GAME_ASSETS = {
-    "player_default": {"char": "♛", "name": "勇者", "style": "bold bright_green"},
-    "player_mage": {"char": "⚚", "name": "法师", "style": "bold bright_cyan"},
-    "player_rogue": {"char": "⚔", "name": "刺客", "style": "bold bright_red"},
-    "player_paladin": {"char": "⚕", "name": "圣骑", "style": "bold bright_yellow"},
-    "enemy_slime": {"char": "○", "name": "史莱姆", "style": "green"},
-    "enemy_goblin": {"char": "ʘ", "name": "哥布林", "style": "yellow"},
-    "enemy_skeleton": {"char": "☠", "name": "骷髅", "style": "white"},
-    "enemy_orc": {"char": "Ω", "name": "兽人", "style": "red"},
-    "enemy_shadow": {"char": "✦", "name": "暗影", "style": "magenta"},
+    "player_default": {"char": "▓", "name": "勇者", "style": "bright_green"},
+    "player_mage": {"char": "░", "name": "法师", "style": "bright_cyan"},
+    "player_rogue": {"char": "▒", "name": "刺客", "style": "bright_red"},
+    "player_paladin": {"char": "█", "name": "圣骑", "style": "bright_yellow"},
+    "enemy_slime": {"char": "▒", "name": "史莱姆", "style": "green"},
+    "enemy_goblin": {"char": "▓", "name": "哥布林", "style": "yellow"},
+    "enemy_skeleton": {"char": "░", "name": "骷髅", "style": "white"},
+    "enemy_orc": {"char": "▓", "name": "兽人", "style": "red"},
+    "enemy_shadow": {"char": "░", "name": "暗影", "style": "magenta"},
     "wall": {"char": "█", "name": "墙壁", "style": "bright_black"},
-    "floor": {"char": "·", "name": "地面", "style": "dim white"},
+    "floor": {"char": "░", "name": "地面", "style": "dim white"},
     "potion": {"char": "♥", "name": "生命药水", "style": "bright_green"},
     "gold": {"char": "◆", "name": "金币", "style": "bright_yellow"},
     "exit": {"char": "⌂", "name": "出口", "style": "bright_cyan"},
@@ -138,13 +240,23 @@ class Enemy:
             self.flash -= 1
 
     def get_render(self):
-        asset = GAME_ASSETS.get(self.enemy_type, GAME_ASSETS["enemy_slime"])
-        char = asset["char"]
-        if self.flash > 0:
-            return char, "bold white on red"
+        """返回敌人渲染数据 - 支持像素画"""
+        pixel_asset = PIXEL_ASSETS.get(self.enemy_type, PIXEL_ASSETS["enemy_slime"])
+        
+        # 使用交替字符创建动画效果
         if self.frame < 10:
-            return char, f"bold {asset['style']}"
-        return char, asset["style"]
+            chars = pixel_asset["chars"]
+        else:
+            chars = pixel_asset.get("alt_chars", pixel_asset["chars"])
+        
+        style = pixel_asset["style"]
+        
+        if self.flash > 0:
+            # 受伤时闪烁效果
+            return chars, "bold white on red"
+        
+        # 返回2x2字符矩阵和样式
+        return chars, style
 
 
 @dataclass
@@ -194,14 +306,22 @@ class Player:
             self.flash -= 1
 
     def get_render(self):
+        """返回玩家渲染数据 - 支持像素画"""
         char_key = CHARACTERS.get(CONFIG.char_set, "player_default")
-        asset = GAME_ASSETS[char_key]
-        char = asset["char"]
-        if self.flash > 0:
-            return char, "bold white on red"
+        pixel_asset = PIXEL_ASSETS[char_key]
+        
+        # 使用交替字符创建动画效果
         if self.frame < 6:
-            return char, asset["style"]
-        return char, asset["style"].replace("bright_", "")
+            chars = pixel_asset["chars"]
+        else:
+            chars = pixel_asset.get("alt_chars", pixel_asset["chars"])
+        
+        style = pixel_asset["style"]
+        
+        if self.flash > 0:
+            return chars, "bold white on red"
+        
+        return chars, style
 
 
 @dataclass
@@ -1015,25 +1135,21 @@ def get_bar(current, max_val, width=10, color=None):
 def get_light_style(style: str, light: float) -> str:
     """根据光照强度调整样式"""
     if light < 0.3:
-        # 黑暗区域 - 降低亮度
         return f"dim {style.replace('bright_', '').replace('bold ', '')}"
     elif light < 0.6:
-        # 阴影区域 - 移除 bright 前缀
         return style.replace('bright_', '').replace('bold ', '')
     elif light < 0.9:
-        # 微暗区域
         return style.replace('bright_', '')
     return style
 
 
 def render_map(game):
-    """渲染游戏地图 - 优化版本"""
-    # 收集浮动文字和粒子（单字符显示，避免错位）
+    """渲染游戏地图 - 2x2像素版本"""
+    # 收集浮动文字
     float_chars = {}
     for f in game.floats:
         fx, fy = int(f.x), int(f.y)
         if 0 <= fy < CONFIG.map_height and 0 <= fx < CONFIG.map_width:
-            # 只取第一个字符，避免多字符导致的错位
             char = f.text[0] if f.text else ""
             float_chars[(fx, fy)] = (char, f.get_alpha_style())
     
@@ -1047,50 +1163,77 @@ def render_map(game):
     # 收集敌人位置
     enemy_pos = {(e.x, e.y): e for e in game.enemies}
     
-    lines = []
+    # 使用两行一组来渲染2x2像素
+    line_pairs = []
     for y in range(CONFIG.map_height):
-        row = Text()
+        row_top = Text()
+        row_bottom = Text()
+        
         for x in range(CONFIG.map_width):
             light = game.light[y][x] if CONFIG.lighting else 1.0
             tile = game.map[y][x]
             
-            # 决定显示什么字符
-            char = "·"
+            # 获取2x2字符矩阵
+            chars_matrix = None
             style = "dim white"
             
             # 优先级：玩家 > 敌人 > 浮动文字 > 粒子 > 地图元素
             if game.player.x == x and game.player.y == y:
-                char, style = game.player.get_render()
+                chars_matrix, style = game.player.get_render()
             elif (x, y) in enemy_pos:
-                char, style = enemy_pos[(x, y)].get_render()
+                chars_matrix, style = enemy_pos[(x, y)].get_render()
             elif (x, y) in float_chars and light > 0.3:
-                # 浮动文字只在有光照时显示
-                char, style = float_chars[(x, y)]
+                char, st = float_chars[(x, y)]
+                chars_matrix = [[char, " "], [" ", " "]]
+                style = st
             elif (x, y) in part_chars and light > 0.3:
-                char, style = part_chars[(x, y)]
+                char, st = part_chars[(x, y)]
+                chars_matrix = [[char, " "], [" ", " "]]
+                style = st
             else:
-                # 地图元素
+                # 地图元素 - 使用2x2像素
                 if tile == TileType.WALL:
-                    char = "█"
-                    style = "bright_black"
+                    # 墙壁使用不同深度创建层次感
+                    wall_type = PIXEL_ASSETS["wall"]
+                    if y > 0 and game.map[y-1][x] != TileType.WALL:
+                        wall_type = PIXEL_ASSETS["wall_top"]
+                    chars_matrix = wall_type["chars"]
+                    style = wall_type["style"]
                 elif tile == TileType.EXIT:
-                    char = GAME_ASSETS["exit"]["char"]
-                    style = GAME_ASSETS["exit"]["style"]
+                    chars_matrix = PIXEL_ASSETS["exit"]["chars"]
+                    style = PIXEL_ASSETS["exit"]["style"]
                 elif tile == TileType.POTION:
-                    char = GAME_ASSETS["potion"]["char"]
-                    style = GAME_ASSETS["potion"]["style"]
+                    chars_matrix = PIXEL_ASSETS["potion"]["chars"]
+                    style = PIXEL_ASSETS["potion"]["style"]
                 elif tile == TileType.GOLD:
-                    char = GAME_ASSETS["gold"]["char"]
-                    style = GAME_ASSETS["gold"]["style"]
+                    chars_matrix = PIXEL_ASSETS["gold"]["chars"]
+                    style = PIXEL_ASSETS["gold"]["style"]
+                else:
+                    # 地面 - 随机纹理
+                    if (x + y) % 3 == 0:
+                        chars_matrix = PIXEL_ASSETS["floor_alt"]["chars"]
+                    else:
+                        chars_matrix = PIXEL_ASSETS["floor"]["chars"]
+                    style = PIXEL_ASSETS["floor"]["style"]
             
             # 应用光照效果
             if CONFIG.lighting:
                 style = get_light_style(style, light)
             
-            row.append(Text(char, style=style))
-            row.append(" ")  # 每个格子后加空格
-        lines.append(row)
-    return Group(*lines)
+            # 添加2x2字符到两行
+            if chars_matrix:
+                row_top.append(Text(chars_matrix[0][0], style=style))
+                row_top.append(Text(chars_matrix[0][1], style=style))
+                row_bottom.append(Text(chars_matrix[1][0], style=style))
+                row_bottom.append(Text(chars_matrix[1][1], style=style))
+            else:
+                row_top.append("  ")
+                row_bottom.append("  ")
+        
+        line_pairs.append(row_top)
+        line_pairs.append(row_bottom)
+    
+    return Group(*line_pairs)
 
 
 def create_compact_stats(game):
