@@ -281,14 +281,30 @@ class CommandHandler:
         self.game = game
 
     def get_suggestions(self, partial: str) -> List[str]:
+        """获取命令建议 - 处理以/开头的情况"""
         if not partial:
             return list(self.COMMANDS.keys())[:8]
+        
+        # 如果输入以/开头，去掉它再匹配
+        if partial.startswith("/"):
+            partial = partial[1:]
+        
         return [cmd for cmd in self.COMMANDS.keys() if cmd.startswith(partial.lower())]
 
     def execute(self, cmd_line: str) -> str:
-        parts = cmd_line.strip().split()
+        """执行命令 - 必须以/开头"""
+        cmd_line = cmd_line.strip()
+        
+        # 检查是否以/开头
+        if not cmd_line.startswith("/"):
+            return "[yellow]命令必须以 / 开头，例如 /help[/]"
+        
+        # 去掉开头的/
+        cmd_line = cmd_line[1:]
+        parts = cmd_line.split()
         if not parts:
             return None
+        
         cmd = parts[0].lower()
         args = parts[1:]
 
@@ -1139,13 +1155,19 @@ def create_stats(game):
     sub_stats.append("  ")
     sub_stats.append(f"CRT:{p.crit}%", style="dim")
     
+    # 游戏时间
+    minutes = int(p.play_time // 60)
+    seconds = int(p.play_time % 60)
+    time_text = Text()
+    time_text.append(f"⏱ {minutes}:{seconds:02d}", style="dim cyan")
+    
     return Panel(
-        Group(table, Text(), sub_stats),
+        Group(table, Text(), sub_stats, Text(), time_text),
         title=f"{asset['char']} {asset['name']}",
         title_align="center",
         border_style=border_color,
         box=box.ROUNDED,
-        height=11,
+        height=12,
     )
 
 
@@ -1243,17 +1265,22 @@ def create_log(game):
                 if i > 0:
                     text.append(" ", style="dim")
                 text.append(f"/{sugg}", style="dim bright_cyan")
+        # 提示如何退出
+        text.append("\n")
+        text.append("Ctrl+X", style="dim yellow")
+        text.append("退出命令模式", style="dim")
     else:
         # 底部快捷提示
         text.append("\n")
         hints = [
             ("?", "帮助"),
-            ("/", "命令"),
+            ("Ctrl+X", "命令"),
+            ("Ctrl+P", "命令面板"),
             ("B", "商店"),
             ("P", "暂停"),
         ]
-        for key, desc in hints:
-            text.append(f"{key}", style="dim yellow")
+        for hint_key, desc in hints:
+            text.append(f"{hint_key}", style="dim yellow")
             text.append(f"{desc} ", style="dim")
     
     return Panel(
@@ -1858,6 +1885,7 @@ def main():
                         continue
                     
                     # Commands面板处理
+                    # Commands面板处理
                     if game.cmd_panel_open:
                         if key == "\x1b":  # ESC关闭
                             game.cmd_panel_open = False
@@ -1865,33 +1893,44 @@ def main():
                         elif key == "\r":  # Enter执行选中命令
                             cmd_list = ["help", "fps", "light", "particle", "char", "config", "shop", "heal", "god", "next"]
                             if game.cmd_panel_sel < len(cmd_list):
-                                result = game.commands.execute(cmd_list[game.cmd_panel_sel])
+                                result = game.commands.execute("/" + cmd_list[game.cmd_panel_sel])
                                 if result:
                                     game.add_msg(result, "yellow")
                             game.cmd_panel_open = False
                             game.cmd_buffer = ""
-                        elif key in ("w", "W") or key == "UP":
+                        elif key == "UP":
                             game.cmd_panel_sel = max(0, game.cmd_panel_sel - 1)
-                        elif key in ("s", "S") or key == "DOWN":
+                        elif key == "DOWN":
+                            game.cmd_panel_sel = min(9, game.cmd_panel_sel + 1)
+                        elif key in ("w", "W"):
+                            game.cmd_panel_sel = max(0, game.cmd_panel_sel - 1)
+                        elif key in ("s", "S"):
                             game.cmd_panel_sel = min(9, game.cmd_panel_sel + 1)
                         elif len(key) == 1 and key.isprintable():
                             # 搜索过滤
                             game.cmd_buffer += key
                         continue
                     
+                    # 命令模式处理 - Ctrl+X切换
                     if game.cmd_mode:
-                        if key == "\r":
+                        if key == "\x18":  # Ctrl+X 切换回游戏
+                            game.cmd_mode = False
+                            game.cmd_buffer = ""
+                            game.cmd_suggestions = []
+                            game.add_msg("退出命令模式", "dim", "info")
+                        elif key == "\r":
                             result = game.commands.execute(game.cmd_buffer)
                             if result:
                                 game.add_msg(result, "yellow")
                             game.cmd_buffer = ""
                             game.cmd_suggestions = []
-                            game.cmd_mode = False
+                            # 执行后保持命令模式，按Ctrl+X退出
                         elif key == "\x7f":
                             game.cmd_buffer = game.cmd_buffer[:-1]
                         elif key == "\x1b":
                             game.cmd_buffer = ""
                             game.cmd_mode = False
+                            game.add_msg("取消命令", "dim", "info")
                         elif key == "TAB":
                             if game.cmd_suggestions:
                                 game.cmd_buffer = game.cmd_suggestions[0]
@@ -1916,9 +1955,19 @@ def main():
                                 game.add_msg("取消退出", "dim", "info")
                         elif key == "?":
                             game.show_help = not game.show_help
-                        elif key == "/" or key == "\x18":  # / 或 Ctrl+X
+                        elif key == "/":  # / 进入传统命令模式
                             game.cmd_mode = True
                             game.cmd_buffer = ""
+                            game.add_msg("命令模式，输入 /help 查看帮助，Ctrl+X 退出", "cyan", "system")
+                        elif key == "\x18":  # Ctrl+X 切换命令模式
+                            game.cmd_mode = not game.cmd_mode
+                            if game.cmd_mode:
+                                game.cmd_buffer = ""
+                                game.add_msg("进入命令模式，Ctrl+X 退出", "cyan", "system")
+                            else:
+                                game.cmd_buffer = ""
+                                game.cmd_suggestions = []
+                                game.add_msg("退出命令模式", "dim", "info")
                         elif key == "\x10":  # Ctrl+P 打开Commands面板
                             game.cmd_panel_open = True
                             game.cmd_panel_sel = 0
