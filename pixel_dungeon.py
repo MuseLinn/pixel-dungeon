@@ -1392,7 +1392,8 @@ def create_shop(game):
         return None
     
     text = Text()
-    text.append(f"💰 金币: {game.player.gold}\n\n", style="bold yellow")
+    text.append("💰 金币: ", style="bold yellow")
+    text.append(f"{game.player.gold}\n\n", style="yellow")
     
     for i, item in enumerate(game.shop_items):
         prefix = "> " if i == game.shop_sel else "  "
@@ -1403,11 +1404,21 @@ def create_shop(game):
         text.append(f" - {item.price}G\n", style=price_color)
         text.append(f"      {item.desc}\n", style="dim white")
     
-    text.append("\n[dim]W/S选择 1-3购买 ESC关闭[/]")
+    # 底部提示
+    text.append("\n")
+    text.append("W/S", style="dim")
+    text.append("选择 ", style="dim")
+    text.append("Enter", style="dim")
+    text.append("购买 ", style="dim")
+    text.append("1-3", style="dim")
+    text.append("快捷购买 ", style="dim")
+    text.append("ESC", style="dim")
+    text.append("关闭", style="dim")
     
     return Panel(
         Align.center(text, vertical="middle"),
-        title="[bold yellow]商店[/]",
+        title="商店",
+        title_align="center",
         border_style="yellow",
         box=box.DOUBLE,
         width=45,
@@ -1419,7 +1430,9 @@ def create_pause_overlay():
     """创建暂停覆盖层"""
     text = Text()
     text.append("\n⏸ 暂停\n\n", style="bold yellow")
-    text.append("[dim]按 P 继续游戏[/]", style="dim")
+    text.append("按 ", style="dim")
+    text.append("P", style="dim yellow")
+    text.append(" 继续游戏", style="dim")
     return Panel(
         Align.center(text, vertical="middle"),
         title="[bold yellow]PAUSED[/]",
@@ -1485,7 +1498,7 @@ def create_upgrade(game):
         Text("\n" + "─" * 50 + "\n", style="dim"),
         stats_text,
         Text(),  # 空行
-        Text("按 1/2/3 选择, WASD 切换", style="dim"),
+        Text("WASD/方向键切换, Enter/1-3确认", style="dim"),
     )
     
     return Panel(
@@ -1743,6 +1756,9 @@ def main():
                     if game.shop_open:
                         if key == "\x1b":  # ESC关闭商店
                             game.close_shop()
+                        elif key == "\r":  # 回车购买选中项
+                            if game.shop_sel < len(game.shop_items):
+                                game.buy_item(game.shop_sel)
                         elif key == "1" and len(game.shop_items) > 0:
                             game.buy_item(0)
                         elif key == "2" and len(game.shop_items) > 1:
@@ -1809,7 +1825,9 @@ def main():
                         elif key == " ":
                             game.wait()
                     elif game.state == "upgrading":
-                        if key == "1":
+                        if key == "\r":  # 回车确认选中项
+                            game.apply_upgrade(game.sel_upgrade)
+                        elif key == "1":
                             game.apply_upgrade(0)
                         elif key == "2":
                             game.apply_upgrade(1)
