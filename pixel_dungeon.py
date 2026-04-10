@@ -1695,6 +1695,9 @@ def show_title_screen():
                     break
                 
                 time.sleep(0.1)
+    except KeyboardInterrupt:
+        # 优雅处理Ctrl+C
+        pass
     finally:
         input_handler.stop()
         console.clear()
@@ -1845,6 +1848,9 @@ def main():
                 main_layout = render_game(game)
                 live.update(main_layout)
 
+    except KeyboardInterrupt:
+        # 优雅处理Ctrl+C
+        pass
     finally:
         input_handler.stop()
         console.clear()
@@ -1852,4 +1858,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        # 全局Ctrl+C处理
+        console.clear()
+        console.print("[dim]👋 已退出游戏[/]")
+        sys.exit(0)

@@ -343,6 +343,8 @@ class Launcher:
                                 return True
                             elif key.lower() == 'q':
                                 sys.exit(0)
+                except KeyboardInterrupt:
+                    sys.exit(0)
                 finally:
                     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
             
@@ -367,10 +369,15 @@ def main():
                 console.print("[red]错误：未找到 pixel_dungeon.py[/red]")
                 sys.exit(1)
     except KeyboardInterrupt:
-        console.clear()
-        console.print("[yellow]已取消[/yellow]")
-        sys.exit(0)
+        # 优雅处理Ctrl+C
+        pass
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        # 全局Ctrl+C处理
+        console.clear()
+        console.print("[dim]👋 已退出[/]")
+        sys.exit(0)
