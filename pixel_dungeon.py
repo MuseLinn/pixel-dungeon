@@ -1257,18 +1257,21 @@ def create_log(game):
     
     # 命令模式提示
     if game.cmd_mode:
-        text.append("\n> ", style="yellow")
-        text.append(game.cmd_buffer)
-        if game.cmd_suggestions:
+        text.append("\n")
+        text.append("> ", style="bold yellow")
+        text.append(game.cmd_buffer if game.cmd_buffer else " ")
+        if game.cmd_suggestions and game.cmd_buffer:
             text.append("\n")
             for i, sugg in enumerate(game.cmd_suggestions[:4]):
                 if i > 0:
                     text.append(" ", style="dim")
-                text.append(f"/{sugg}", style="dim bright_cyan")
+                text.append(f"/{sugg}", style="dim cyan")
         # 提示如何退出
         text.append("\n")
+        text.append("Enter", style="dim yellow")
+        text.append("执行 ", style="dim")
         text.append("Ctrl+X", style="dim yellow")
-        text.append("退出命令模式", style="dim")
+        text.append("退出", style="dim")
     else:
         # 底部快捷提示
         text.append("\n")
@@ -1294,9 +1297,13 @@ def create_log(game):
 
 
 def render_game(game):
-    """渲染游戏界面 - 提取为函数方便复用"""
+    """渲染游戏界面 - 自适应终端大小"""
     term_width = console.width
     term_height = console.height
+    
+    # 确保最小终端大小
+    term_width = max(term_width, 80)
+    term_height = max(term_height, 24)
     
     # 地图区域宽度 = 地图格子数 * 2 (字符+空格) + 边框
     map_content_width = CONFIG.map_width * 2
@@ -1307,39 +1314,44 @@ def render_game(game):
     
     main_layout = Layout()
     
-    # 如果终端太窄，只显示地图
-    if side_width < 30:
-        # 窄终端模式 - 状态栏在地图下方
+    # 根据玩家状态改变边框颜色
+    hp_ratio = game.player.hp / game.player.max_hp
+    if hp_ratio > 0.6:
+        border_color = "cyan"
+    elif hp_ratio > 0.3:
+        border_color = "yellow"
+    else:
+        border_color = "red"
+    
+    # 如果终端太窄，使用紧凑布局
+    if side_width < 30 or term_height < 30:
+        # 窄终端模式
         map_layout = Layout()
+        # 动态计算各区域大小
+        map_height = max(term_height - 10, 12)
+        stats_height = 3
+        log_height = term_height - map_height - stats_height
+        
         map_layout.split_column(
             Layout(Panel(
                 render_map(game),
                 title=f"第 {game.player.floor} 层",
                 title_align="center",
-                border_style="cyan",
+                border_style=border_color,
                 box=box.ROUNDED,
                 padding=(0, 0),
-            ), ratio=term_height - 9),
-            Layout(create_compact_stats(game), size=3),
-            Layout(create_log(game), size=6),
+            ), size=map_height),
+            Layout(create_compact_stats(game), size=stats_height),
+            Layout(create_log(game), size=log_height),
         )
         main_layout = map_layout
     else:
-        # 正常布局
+        # 正常布局 - 使用比例而非固定大小
         top = Layout()
         top.split_row(
             Layout(name="map", ratio=map_panel_width),
             Layout(name="side", ratio=side_width)
         )
-
-        # 根据玩家状态改变边框颜色（反馈机制）
-        hp_ratio = game.player.hp / game.player.max_hp
-        if hp_ratio > 0.6:
-            border_color = "cyan"  # 健康
-        elif hp_ratio > 0.3:
-            border_color = "yellow"  # 警告
-        else:
-            border_color = "red"  # 危险
 
         map_panel = Panel(
             render_map(game),
@@ -1355,8 +1367,9 @@ def render_game(game):
         if game.show_help:
             side.update(create_help_panel())
         else:
+            # 动态计算状态面板高度
             side.split_column(
-                Layout(create_stats(game), size=14),
+                Layout(create_stats(game), size=13),
                 Layout(create_legend_panel()),
             )
         top["side"].update(side)
@@ -1364,9 +1377,13 @@ def render_game(game):
         bottom = Layout()
         bottom.update(create_log(game))
 
+        # 动态计算比例
+        top_ratio = max(term_height - 8, term_height * 0.75)
+        bottom_ratio = term_height - top_ratio
+        
         main_layout.split_column(
-            Layout(top, ratio=term_height - 7),
-            Layout(bottom, size=7)
+            Layout(top, ratio=int(top_ratio)),
+            Layout(bottom, ratio=int(bottom_ratio))
         )
 
     # 覆盖层处理（升级、游戏结束、商店、暂停）
@@ -1918,22 +1935,26 @@ def main():
                             game.cmd_buffer = ""
                             game.cmd_suggestions = []
                             game.add_msg("退出命令模式", "dim", "info")
-                        elif key == "\r":
-                            result = game.commands.execute(game.cmd_buffer)
-                            if result:
-                                game.add_msg(result, "yellow")
-                            game.cmd_buffer = ""
-                            game.cmd_suggestions = []
-                            # 执行后保持命令模式，按Ctrl+X退出
-                        elif key == "\x7f":
+                        elif key == "\r":  # 回车执行命令
+                            if game.cmd_buffer.strip():
+                                result = game.commands.execute(game.cmd_buffer)
+                                if result:
+                                    game.add_msg(result, "yellow")
+                                # 执行后自动退出命令模式
+                                game.cmd_mode = False
+                                game.cmd_buffer = ""
+                                game.cmd_suggestions = []
+                            else:
+                                game.add_msg("请输入命令", "yellow", "warning")
+                        elif key == "\x7f":  # 退格删除
                             game.cmd_buffer = game.cmd_buffer[:-1]
-                        elif key == "\x1b":
+                        elif key == "\x1b":  # ESC取消
                             game.cmd_buffer = ""
                             game.cmd_mode = False
                             game.add_msg("取消命令", "dim", "info")
-                        elif key == "TAB":
+                        elif key == "TAB":  # TAB补全
                             if game.cmd_suggestions:
-                                game.cmd_buffer = game.cmd_suggestions[0]
+                                game.cmd_buffer = "/" + game.cmd_suggestions[0]
                         elif len(key) == 1 and key.isprintable():
                             game.cmd_buffer += key
                     elif game.state == "playing":
