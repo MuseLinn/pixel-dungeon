@@ -20,11 +20,23 @@ class Rarity(Enum):
 class Upgrade:
     """升级选项"""
 
-    name: str
-    description: str
+    name_key: str
+    description_key: str
     effect: Callable
     rarity: str
     icon: str
+
+    @property
+    def name(self) -> str:
+        from ..utils.i18n import _
+
+        return _(self.name_key)
+
+    @property
+    def description(self) -> str:
+        from ..utils.i18n import _
+
+        return _(self.description_key)
 
     def apply(self, player) -> None:
         """应用升级效果"""
@@ -54,8 +66,8 @@ class UpgradePool:
 
     ALL_UPGRADES = [
         Upgrade(
-            "生命强化",
-            "最大生命 +20",
+            "hp_boost",
+            "hp_boost_desc",
             lambda p: (
                 setattr(p, "max_hp", p.max_hp + 20) or setattr(p, "hp", p.hp + 20)
             ),
@@ -63,57 +75,57 @@ class UpgradePool:
             "♥",
         ),
         Upgrade(
-            "攻击强化",
-            "攻击力 +3",
+            "atk_boost",
+            "atk_boost_desc",
             lambda p: setattr(p, "atk", p.atk + 3),
             "common",
             "⚔",
         ),
         Upgrade(
-            "生命恢复",
-            "每回合恢复 +2",
+            "regen_boost",
+            "regen_boost_desc",
             lambda p: setattr(p, "regen", p.regen + 2),
             "common",
             "✚",
         ),
         Upgrade(
-            "铁皮",
-            "防御 +2",
+            "iron_skin",
+            "iron_skin_desc",
             lambda p: setattr(p, "defense", p.defense + 2),
             "common",
             "🛡",
         ),
         Upgrade(
-            "敏捷训练",
-            "闪避率 +10%",
+            "agility",
+            "agility_desc",
             lambda p: setattr(p, "dodge", getattr(p, "dodge", 0) + 10),
             "common",
             "🏃",
         ),
         Upgrade(
-            "毒素武器",
-            "攻击附加毒伤 3/回合",
+            "poison_weapon",
+            "poison_weapon_desc",
             lambda p: setattr(p, "poison_atk", getattr(p, "poison_atk", 0) + 3),
             "common",
             "🐍",
         ),
         Upgrade(
-            "生命偷取",
-            "攻击恢复 10%伤害",
+            "life_steal",
+            "life_steal_desc",
             lambda p: setattr(p, "lifesteal", p.lifesteal + 10),
             "rare",
             "♥",
         ),
         Upgrade(
-            "暴击",
-            "暴击率 +15%",
+            "crit_boost",
+            "crit_boost_desc",
             lambda p: setattr(p, "crit", p.crit + 15),
             "rare",
             "⚡",
         ),
         Upgrade(
-            "狂战士",
-            "攻击+5 防御-1",
+            "berserker",
+            "berserker_desc",
             lambda p: (
                 setattr(p, "atk", p.atk + 5)
                 or setattr(p, "defense", max(0, p.defense - 1))
@@ -122,8 +134,8 @@ class UpgradePool:
             "🪓",
         ),
         Upgrade(
-            "泰坦",
-            "生命+50 攻击-2",
+            "titan",
+            "titan_desc",
             lambda p: (
                 setattr(p, "max_hp", p.max_hp + 50)
                 or setattr(p, "hp", p.hp + 50)
@@ -133,50 +145,46 @@ class UpgradePool:
             "🗿",
         ),
         Upgrade(
-            "连击",
-            "25%概率攻击2次",
+            "double_strike",
+            "double_strike_desc",
             lambda p: setattr(p, "double_hit", getattr(p, "double_hit", 0) + 25),
             "rare",
             "⚔️",
         ),
         Upgrade(
-            "荆棘护甲",
-            "反弹15%受到伤害",
+            "thorns_armor",
+            "thorns_armor_desc",
             lambda p: setattr(p, "thorns", getattr(p, "thorns", 0) + 15),
             "rare",
             "🌵",
         ),
         Upgrade(
-            "吸血鬼",
-            "吸血 +25%",
+            "vampire",
+            "vampire_desc",
             lambda p: setattr(p, "lifesteal", p.lifesteal + 25),
             "epic",
             "🧛",
         ),
         Upgrade(
-            "狂怒",
-            "暴击率 +30%",
-            lambda p: setattr(p, "crit", p.crit + 30),
-            "epic",
-            "🌀",
+            "fury", "fury_desc", lambda p: setattr(p, "crit", p.crit + 30), "epic", "🌀"
         ),
         Upgrade(
-            "灵魂汲取",
-            "击杀敌人恢复10%最大生命",
+            "soul_drain",
+            "soul_drain_desc",
             lambda p: setattr(p, "soul_drain", True),
             "epic",
             "💀",
         ),
         Upgrade(
-            "雷霆一击",
-            "暴击伤害变为3倍",
+            "thunder_strike",
+            "thunder_strike_desc",
             lambda p: setattr(p, "crit_mult", getattr(p, "crit_mult", 2.0) + 1.0),
             "epic",
             "⚡",
         ),
         Upgrade(
-            "不朽",
-            "生命+100 恢复+5",
+            "immortal",
+            "immortal_desc",
             lambda p: (
                 setattr(p, "max_hp", p.max_hp + 100)
                 or setattr(p, "hp", p.hp + 100)
@@ -186,15 +194,15 @@ class UpgradePool:
             "👑",
         ),
         Upgrade(
-            "毁灭者",
-            "攻击+15 暴击+20%",
+            "destroyer",
+            "destroyer_desc",
             lambda p: setattr(p, "atk", p.atk + 15) or setattr(p, "crit", p.crit + 20),
             "legendary",
             "☠",
         ),
         Upgrade(
-            "时空行者",
-            "闪避+30% 移速+1",
+            "time_walker",
+            "time_walker_desc",
             lambda p: setattr(p, "dodge", getattr(p, "dodge", 0) + 30),
             "legendary",
             "🌌",

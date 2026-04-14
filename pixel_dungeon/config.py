@@ -28,6 +28,7 @@ class CONFIG:
     # 游戏设置
     char_set: str = "default"  # 当前角色
     difficulty: str = "normal"
+    language: str = "zh_CN"
 
     # 游戏平衡性
     enemy_scale_per_floor: float = 0.15  # 每层敌人强度增长
@@ -75,6 +76,8 @@ class CONFIG:
             "particles": cls.particles,
             "animations": cls.animations,
             "char_set": cls.char_set,
+            "difficulty": cls.difficulty,
+            "language": cls.language,
         }
 
     @classmethod
@@ -90,6 +93,9 @@ class CONFIG:
                 diff = data.get("difficulty", cls.difficulty)
                 if diff in ("easy", "normal", "hard"):
                     cls.difficulty = diff
+                lang = data.get("language", cls.language)
+                if lang in ("zh_CN", "en_US"):
+                    cls.language = lang
             except Exception:
                 pass
 
@@ -104,6 +110,7 @@ class CONFIG:
                     "particles": cls.particles,
                     "animations": cls.animations,
                     "difficulty": cls.difficulty,
+                    "language": cls.language,
                 },
                 f,
                 ensure_ascii=False,

@@ -7,32 +7,32 @@ import argparse
 from .config import CONFIG
 from .core.game import Game
 from .ui.screens import show_title_screen
+from .utils.i18n import set_language, _
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Pixel Dungeon - 像素地牢")
-    parser.add_argument("--fps", type=int, default=30, help="设置帧率 (10-60，默认 30)")
-    parser.add_argument("--no-light", action="store_true", help="关闭光照效果")
-    parser.add_argument("--no-particle", action="store_true", help="关闭粒子效果")
+    parser = argparse.ArgumentParser(description=_("cli_desc"))
+    parser.add_argument("--fps", type=int, default=30, help=_("arg_fps"))
+    parser.add_argument("--no-light", action="store_true", help=_("arg_no_light"))
+    parser.add_argument("--no-particle", action="store_true", help=_("arg_no_particle"))
     parser.add_argument(
         "--char",
         type=str,
         default="default",
         choices=["default", "mage", "rogue", "paladin"],
-        help="选择角色 (default/mage/rogue/paladin)",
+        help=_("arg_char"),
     )
-    parser.add_argument(
-        "--skip-title", action="store_true", help="跳过标题画面（直接开始）"
-    )
-    parser.add_argument("--update", action="store_true", help="检查并更新到最新版本")
-    parser.add_argument("--uninstall", action="store_true", help="卸载游戏")
-    parser.add_argument("--version", action="store_true", help="显示版本号")
+    parser.add_argument("--skip-title", action="store_true", help=_("arg_skip_title"))
+    parser.add_argument("--update", action="store_true", help=_("arg_update"))
+    parser.add_argument("--uninstall", action="store_true", help=_("arg_uninstall"))
+    parser.add_argument("--version", action="store_true", help=_("arg_version"))
 
     return parser.parse_args()
 
 
 def main():
     CONFIG.load_settings()
+    set_language(CONFIG.language)
 
     args = parse_args()
 
@@ -48,7 +48,7 @@ def main():
         ok, msg = uninstall()
         print(msg)
         if ok:
-            print("==> 卸载完成")
+            print(f"==> {_('uninstall_complete')}")
         return
 
     if args.update:
@@ -77,7 +77,7 @@ def main():
         action, selected_char = show_title_screen()
 
         if action == "quit":
-            print("已退出游戏")
+            print(_("quit_msg"))
             break
 
         if action == "start":

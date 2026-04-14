@@ -212,8 +212,8 @@ class TestUpgradeSystem(unittest.TestCase):
         original_hp = player.max_hp
 
         upgrade = Upgrade(
-            "生命强化",
-            "最大生命 +20",
+            "hp_boost",
+            "hp_boost_desc",
             lambda p: (
                 setattr(p, "max_hp", p.max_hp + 20) or setattr(p, "hp", p.hp + 20)
             ),
@@ -230,7 +230,7 @@ class TestUpgradeSystem(unittest.TestCase):
 
         self.assertEqual(len(upgrades), 3)
         for upgrade in upgrades:
-            self.assertIsNotNone(upgrade.name)
+            self.assertIsNotNone(upgrade.name_key)
             self.assertIsNotNone(upgrade.effect)
             self.assertIn(upgrade.rarity, ["common", "rare", "epic", "legendary"])
 
@@ -244,8 +244,9 @@ class TestShopSystem(unittest.TestCase):
         player.gold = 100
 
         item = ShopItem(
-            "测试物品",
-            "测试描述",
+            "test_item",
+            "test_item",
+            "test_item_desc",
             50,
             "★",
             lambda p: setattr(p, "atk", p.atk + 5),
@@ -261,8 +262,9 @@ class TestShopSystem(unittest.TestCase):
         player.gold = 10
 
         item = ShopItem(
-            "昂贵物品",
-            "测试",
+            "expensive_item",
+            "expensive_item",
+            "expensive_item_desc",
             100,
             "★",
             lambda p: setattr(p, "atk", p.atk + 5),

@@ -26,8 +26,19 @@ class Enemy:
     atk_mult: float = 1.0
     gold_mult: float = 1.0
 
+    base_name_key: str = ""
+    prefix_key: str = ""
+
     flash: int = field(default=0, repr=False)
     frame: int = field(default=0, repr=False)
+
+    @property
+    def display_name(self) -> str:
+        from ..utils.i18n import _
+
+        prefix = _(self.prefix_key) if self.prefix_key else ""
+        base = _(self.base_name_key) if self.base_name_key else self.name
+        return prefix + base
 
     def animate(self) -> None:
         """更新动画帧"""
@@ -74,6 +85,8 @@ class Enemy:
         hp_mult: float = 1.0,
         atk_mult: float = 1.0,
         gold_mult: float = 1.0,
+        base_name_key: str = "",
+        prefix_key: str = "",
     ) -> "Enemy":
         scale = 1 + (floor - 1) * (
             scale_override if scale_override is not None else 0.15
@@ -92,15 +105,6 @@ class Enemy:
             hp_mult=hp_mult,
             atk_mult=atk_mult,
             gold_mult=gold_mult,
-        )
-        return cls(
-            enemy_type=enemy_type,
-            name=name,
-            x=x,
-            y=y,
-            hp=int(base_hp * scale),
-            max_hp=int(base_hp * scale),
-            atk=int(base_atk * scale),
-            exp=int(base_exp * scale),
-            gold=int(base_gold * scale),
+            base_name_key=base_name_key,
+            prefix_key=prefix_key,
         )

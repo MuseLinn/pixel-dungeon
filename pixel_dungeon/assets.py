@@ -24,6 +24,7 @@ GAME_ASSETS = {
             "██  ██",
         ],
         "name": "勇者",
+        "name_key": "hero",
         "style": "bright_green",
         "style_alt": "green",
         "hp": 100,
@@ -45,6 +46,7 @@ GAME_ASSETS = {
             "█ ▓▓ █",
         ],
         "name": "法师",
+        "name_key": "mage",
         "style": "bright_cyan",
         "style_alt": "cyan",
         "hp": 80,
@@ -66,6 +68,7 @@ GAME_ASSETS = {
             "▓    ▓",
         ],
         "name": "刺客",
+        "name_key": "assassin",
         "style": "bright_red",
         "style_alt": "red",
         "hp": 85,
@@ -87,6 +90,7 @@ GAME_ASSETS = {
             "██  ██",
         ],
         "name": "圣骑",
+        "name_key": "paladin",
         "style": "bright_yellow",
         "style_alt": "yellow",
         "hp": 130,
@@ -318,24 +322,24 @@ CHARACTERS = {
 }
 
 ENEMY_TYPES = [
-    ("enemy_slime", "史莱姆", 15, 5, 10, 5),
-    ("enemy_goblin", "哥布林", 25, 8, 15, 8),
-    ("enemy_skeleton", "骷髅", 30, 12, 20, 10),
-    ("enemy_orc", "兽人", 50, 10, 25, 15),
-    ("enemy_shadow", "暗影", 40, 15, 30, 20),
-    ("enemy_bat", "蝙蝠", 12, 6, 8, 4),
-    ("enemy_rat", "巨鼠", 18, 4, 6, 3),
-    ("enemy_witch", "女巫", 22, 14, 18, 12),
-    ("enemy_golem", "魔像", 70, 8, 28, 12),
+    ("enemy_slime", "slime", 15, 5, 10, 5),
+    ("enemy_goblin", "goblin", 25, 8, 15, 8),
+    ("enemy_skeleton", "skeleton", 30, 12, 20, 10),
+    ("enemy_orc", "orc", 50, 10, 25, 15),
+    ("enemy_shadow", "shadow", 40, 15, 30, 20),
+    ("enemy_bat", "bat", 12, 6, 8, 4),
+    ("enemy_rat", "rat", 18, 4, 6, 3),
+    ("enemy_witch", "witch", 22, 14, 18, 12),
+    ("enemy_golem", "golem", 70, 8, 28, 12),
 ]
 
 ENEMY_PREFIXES = [
     ("", 1.0, 1.0, 1.0),
-    ("暴躁的", 0.9, 1.4, 1.1),
-    ("懒惰的", 1.3, 0.7, 0.9),
-    ("巨大的", 1.6, 1.1, 1.2),
-    ("迅捷的", 0.8, 1.2, 1.15),
-    ("精英", 1.3, 1.3, 1.5),
+    ("prefix_irritable", 0.9, 1.4, 1.1),
+    ("prefix_lazy", 1.3, 0.7, 0.9),
+    ("prefix_huge", 1.6, 1.1, 1.2),
+    ("prefix_swift", 0.8, 1.2, 1.15),
+    ("prefix_elite", 1.3, 1.3, 1.5),
 ]
 
 

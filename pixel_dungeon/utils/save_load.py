@@ -77,7 +77,9 @@ class SaveManager:
 
             return True
         except Exception as e:
-            print(f"保存失败: {e}")
+            from .i18n import _
+
+            print(f"{_('save_failed')}: {e}")
             return False
 
     def load(self, game, slot: int = 0) -> bool:
@@ -110,7 +112,9 @@ class SaveManager:
 
             return True
         except Exception as e:
-            print(f"加载失败: {e}")
+            from .i18n import _
+
+            print(f"{_('load_failed')}: {e}")
             return False
 
     def list_saves(self) -> List[Dict]:
@@ -122,11 +126,13 @@ class SaveManager:
                 try:
                     with open(save_path, "r", encoding="utf-8") as f:
                         data = json.load(f)
+                    from .i18n import _
+
                     saves.append(
                         {
                             "slot": i,
                             "floor": data.get("floor", 1),
-                            "timestamp": data.get("timestamp", "未知"),
+                            "timestamp": data.get("timestamp", _("unknown")),
                             "version": data.get("version", "1.0"),
                         }
                     )
@@ -144,7 +150,9 @@ class SaveManager:
                 save_path.unlink()
             return True
         except Exception as e:
-            print(f"删除存档失败: {e}")
+            from .i18n import _
+
+            print(f"{_('delete_save_failed')}: {e}")
             return False
 
     def exists(self, slot: int) -> bool:

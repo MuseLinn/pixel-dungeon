@@ -34,7 +34,9 @@ class Validator:
                 try:
                     value = transform(value)
                 except Exception:
-                    return ValidationResult(False, value, f"{self.name} 格式错误")
+                    from .i18n import _
+
+                    return ValidationResult(False, value, _("format_error", self.name))
 
             if check(value):
                 return ValidationResult(True, value)

@@ -10,13 +10,26 @@ import random
 class ShopItem:
     """商店商品"""
 
-    name: str
-    description: str
+    item_key: str
+    name_key: str
+    description_key: str
     price: int
     icon: str
     effect: Callable
     repeatable: bool = True  # 是否可以重复购买
     purchased: bool = False
+
+    @property
+    def name(self) -> str:
+        from ..utils.i18n import _
+
+        return _(self.name_key)
+
+    @property
+    def description(self) -> str:
+        from ..utils.i18n import _
+
+        return _(self.description_key)
 
     def buy(self, player) -> bool:
         """购买商品，返回是否成功"""
@@ -37,24 +50,27 @@ class Shop:
 
     ALL_ITEMS = [
         ShopItem(
-            "生命药水",
-            "恢复 30 HP",
+            "potion_hp",
+            "potion_hp",
+            "potion_hp_desc",
             20,
             "♥",
             lambda p: setattr(p, "hp", min(p.max_hp, p.hp + 30)),
             repeatable=True,
         ),
         ShopItem(
-            "力量卷轴",
-            "攻击力 +2",
+            "scroll_power",
+            "scroll_power",
+            "scroll_power_desc",
             50,
             "⚔",
             lambda p: setattr(p, "atk", p.atk + 2),
             repeatable=True,
         ),
         ShopItem(
-            "体质卷轴",
-            "最大生命 +20",
+            "scroll_body",
+            "scroll_body",
+            "scroll_body_desc",
             50,
             "♥",
             lambda p: (
@@ -63,24 +79,27 @@ class Shop:
             repeatable=True,
         ),
         ShopItem(
-            "铁皮药剂",
-            "防御 +1",
+            "potion_iron",
+            "potion_iron",
+            "potion_iron_desc",
             40,
             "🛡",
             lambda p: setattr(p, "defense", p.defense + 1),
             repeatable=True,
         ),
         ShopItem(
-            "狂暴卷轴",
-            "暴击率 +10%",
+            "scroll_rage",
+            "scroll_rage",
+            "scroll_rage_desc",
             60,
             "⚡",
             lambda p: setattr(p, "crit", p.crit + 10),
             repeatable=True,
         ),
         ShopItem(
-            "生命精华",
-            "最大生命 +50",
+            "essence_life",
+            "essence_life",
+            "essence_life_desc",
             100,
             "✦",
             lambda p: (
@@ -89,24 +108,27 @@ class Shop:
             repeatable=True,
         ),
         ShopItem(
-            "炸弹",
-            "下次战斗造成50点爆炸伤害",
+            "bomb",
+            "bomb",
+            "bomb_desc",
             45,
             "💣",
             lambda p: setattr(p, "bomb_charges", getattr(p, "bomb_charges", 0) + 1),
             repeatable=True,
         ),
         ShopItem(
-            "传送卷轴",
-            "立即传送到出口附近",
+            "scroll_teleport",
+            "scroll_teleport",
+            "scroll_teleport_desc",
             80,
             "📜",
             lambda p: setattr(p, "teleport_ready", True),
             repeatable=False,
         ),
         ShopItem(
-            "无敌药水",
-            "下一场战斗免疫伤害",
+            "potion_invincible",
+            "potion_invincible",
+            "potion_invincible_desc",
             120,
             "🛡",
             lambda p: setattr(
@@ -115,8 +137,9 @@ class Shop:
             repeatable=True,
         ),
         ShopItem(
-            "幸运金币",
-            "金币获取+20% 持续5层",
+            "coin_luck",
+            "coin_luck",
+            "coin_luck_desc",
             60,
             "🍀",
             lambda p: setattr(
@@ -149,21 +172,23 @@ class Shop:
 
     def buy_selected(self, player) -> tuple[bool, str]:
         """购买选中的商品"""
+        from ..utils.i18n import _
+
         if not self.items:
-            return False, "商店为空"
+            return False, _("shop_empty")
 
         item = self.items[self.selected_index]
 
         if not item.repeatable and item.purchased:
-            return False, f"{item.name} 已售罄"
+            return False, _("sold_out", item.name)
 
         if player.gold < item.price:
-            return False, f"金币不足 (需要 {item.price}G)"
+            return False, _("not_enough_gold", item.price)
 
         if item.buy(player):
-            return True, f"购买了 {item.name}！"
+            return True, _("bought", item.name)
 
-        return False, "购买失败"
+        return False, _("buy_failed")
 
     def get_selected(self) -> ShopItem | None:
         """获取当前选中的商品"""

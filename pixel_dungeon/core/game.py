@@ -20,6 +20,7 @@ from ..utils.validators import validate_command_arg
 from ..utils.save_load import SaveManager
 from ..ui.renderer import Renderer
 from ..core.commands import CommandHandler
+from ..utils.i18n import _
 
 
 console = Console()
@@ -89,7 +90,7 @@ class Game:
         self.transition_text = ""
         self.menu_transition_timer = 0
         self.menu_transition_type = ""
-        self.add_msg("欢迎来到像素地牢！", "green", "system")
+        self.add_msg(_("welcome"), "green", "system")
 
     def _bfs_path_exists(self, sx: int, sy: int, ex: int, ey: int) -> bool:
         from collections import deque
@@ -214,15 +215,16 @@ class Game:
             scale = scale * 1.4
 
         from ..assets import ENEMY_PREFIXES
+        from ..utils.i18n import _
 
-        for _ in range(num_enemies):
-            enemy_type, base_name, hp, atk, exp, gold = random.choice(available)
+        for _i in range(num_enemies):
+            enemy_type, base_name_key, hp, atk, exp, gold = random.choice(available)
 
             prefix_entry = random.choice(ENEMY_PREFIXES)
-            prefix, hp_mult, atk_mult, gold_mult = prefix_entry
-            name = prefix + base_name if prefix else base_name
+            prefix_key, hp_mult, atk_mult, gold_mult = prefix_entry
+            name = _(prefix_key) + _(base_name_key) if prefix_key else _(base_name_key)
 
-            for _ in range(100):
+            for _j in range(100):
                 x = random.randint(1, CONFIG.map_width - 2)
                 y = random.randint(1, CONFIG.map_height - 2)
 
@@ -242,10 +244,12 @@ class Game:
                         gold,
                         self.floor,
                         scale,
-                        prefix=prefix,
+                        prefix=_(prefix_key),
                         hp_mult=hp_mult,
                         atk_mult=atk_mult,
                         gold_mult=gold_mult,
+                        base_name_key=base_name_key,
+                        prefix_key=prefix_key,
                     )
                     self.enemies.append(enemy)
                     break
@@ -326,7 +330,7 @@ class Game:
         if self.player.bomb_charges > 0:
             damage += 50
             self.player.bomb_charges -= 1
-            self.add_msg("炸弹爆炸！", "yellow", "combat")
+            self.add_msg(_("bomb_explode"), "yellow", "combat")
 
         enemy.take_damage(damage)
 
@@ -335,9 +339,10 @@ class Game:
             enemy.x, enemy.y, str(damage), "bold yellow" if is_crit else "white", 25
         )
 
-        msg = f"对 {enemy.name} 造成 {damage} 伤害"
         if is_crit:
-            msg += " (暴击!)"
+            msg = _("deal_dmg_crit", enemy.display_name, damage)
+        else:
+            msg = _("deal_dmg", enemy.display_name, damage)
         self.add_msg(msg, "red" if is_crit else "white", "combat")
 
         if self.player.lifesteal > 0 and damage > 0:
@@ -363,14 +368,14 @@ class Game:
             and enemy.is_alive()
             and random.randint(1, 100) <= self.player.double_hit
         ):
-            self.add_msg("连击！", "cyan", "combat")
+            self.add_msg(_("combo"), "cyan", "combat")
             killed = self._do_player_strike(enemy)
 
         if not killed and enemy.is_alive() and self.player.poison_atk > 0:
             if not hasattr(enemy, "poison_stacks"):
                 enemy.poison_stacks = 0
             enemy.poison_stacks += self.player.poison_atk
-            self.add_msg(f"{enemy.name} 中毒了！", "green", "combat")
+            self.add_msg(_("poisoned", enemy.display_name), "green", "combat")
 
         self.enemy_turn()
         self.animate()
@@ -382,7 +387,9 @@ class Game:
         if self.player.gold_bonus_floors > 0:
             gold_gain = int(gold_gain * 1.2)
         self.add_msg(
-            f"击败了 {enemy.name}！获得 {enemy.exp} 经验, {gold_gain}G",
+            _("defeated", enemy.display_name)
+            + " "
+            + _("got_exp_gold", enemy.exp, gold_gain),
             "yellow",
             "combat",
         )
@@ -408,7 +415,7 @@ class Game:
     def level_up(self) -> None:
         """升级"""
         self.player.level_up()
-        self.add_msg(f"升级了！现在是 {self.player.level} 级", "cyan", "level")
+        self.add_msg(_("leveled_up", self.player.level), "cyan", "level")
         self.particles.spawn(
             self.player.x, self.player.y, 10, ["★", "✦"], ["yellow", "cyan"]
         )
@@ -423,7 +430,7 @@ class Game:
         if 0 <= index < len(self.upgrades):
             upgrade = self.upgrades[index]
             upgrade.apply(self.player)
-            self.add_msg(f"获得: {upgrade.name}！", "cyan", "success")
+            self.add_msg(_("got_upgrade", upgrade.name), "cyan", "success")
             self.particles.spawn(
                 self.player.x, self.player.y, 8, ["✦", "★"], ["yellow", "cyan"]
             )
@@ -463,29 +470,33 @@ class Game:
     def enemy_attack(self, enemy: Enemy) -> None:
         """敌人攻击玩家"""
         if random.randint(1, 100) <= self.player.dodge:
-            self.particles.add_text(self.player.x, self.player.y, "闪避!", "cyan", 25)
-            self.add_msg(f"闪避了 {enemy.name} 的攻击！", "cyan", "combat")
+            self.particles.add_text(
+                self.player.x, self.player.y, _("dodge"), "cyan", 25
+            )
+            self.add_msg(_("dodged_attack", enemy.display_name), "cyan", "combat")
             return
 
         if self.player.invincible_charges > 0:
             self.player.invincible_charges -= 1
             self.particles.add_text(
-                self.player.x, self.player.y, "无敌!", "bright_yellow", 25
+                self.player.x, self.player.y, _("invincible"), "bright_yellow", 25
             )
-            self.add_msg(f"无敌药水抵挡了 {enemy.name} 的攻击！", "yellow", "combat")
+            self.add_msg(
+                _("invincible_blocked", enemy.display_name), "yellow", "combat"
+            )
             return
 
         damage = enemy.atk
         actual = self.player.take_damage(damage)
 
         self.particles.add_text(self.player.x, self.player.y, f"-{actual}", "red", 25)
-        self.add_msg(f"{enemy.name} 对你造成 {actual} 伤害", "red", "combat")
+        self.add_msg(_("enemy_dmg_you", enemy.display_name, actual), "red", "combat")
 
         if self.player.thorns > 0:
             thorn_dmg = max(1, int(actual * self.player.thorns / 100))
             enemy.hp = max(0, enemy.hp - thorn_dmg)
             self.particles.add_text(enemy.x, enemy.y, f"-{thorn_dmg}", "yellow", 20)
-            self.add_msg(f"荆棘护甲反弹 {thorn_dmg} 伤害", "yellow", "combat")
+            self.add_msg(_("thorns_reflect", thorn_dmg), "yellow", "combat")
             if not enemy.is_alive():
                 self.kill_enemy(enemy)
 
@@ -555,7 +566,7 @@ class Game:
             self.stats["total_healed"] += heal
             self.map[y][x] = TileType.EMPTY
             self.particles.spawn(x, y, 5, ["+"], ["red"])
-            self.add_msg(f"喝下药水，恢复 {heal} HP", "red", "item")
+            self.add_msg(_("hp_potion_heal", heal), "red", "item")
 
         elif tile == TileType.GOLD:
             amount = random.randint(5, 15)
@@ -563,7 +574,7 @@ class Game:
             self.stats["total_gold_earned"] += amount
             self.map[y][x] = TileType.EMPTY
             self.particles.spawn(x, y, 4, ["◆"], ["yellow"])
-            self.add_msg(f"拾取 {amount}G", "yellow", "item")
+            self.add_msg(_("got_gold", amount), "yellow", "item")
 
         elif tile == TileType.EXIT:
             self.next_floor()
@@ -571,8 +582,8 @@ class Game:
     def next_floor(self) -> None:
         """进入下一层"""
         self.floor += 1
-        self.add_msg(f"进入第 {self.floor} 层...", "cyan", "system")
-        self.transition_text = f" 进入第 {self.floor} 层 "
+        self.add_msg(_("enter_floor", self.floor), "cyan", "system")
+        self.transition_text = _("floor_transition", self.floor)
         self.transition_timer = 25
         self.map_seed = random.randint(0, 2**31 - 1)
         self.init_map()
@@ -597,7 +608,7 @@ class Game:
     def shop_buy(self) -> None:
         """购买商品"""
         item = self.shop.get_selected()
-        if item and item.name == "传送卷轴" and not item.purchased:
+        if item and item.item_key == "scroll_teleport" and not item.purchased:
             for y in range(CONFIG.map_height):
                 for x in range(CONFIG.map_width):
                     if self.map[y][x] == TileType.EXIT:
@@ -617,7 +628,7 @@ class Game:
     def game_over(self) -> None:
         """游戏结束"""
         self.state = "game_over"
-        self.add_msg("你被击败了！游戏结束。", "red", "system")
+        self.add_msg(_("you_died_game_over"), "red", "system")
 
     def add_msg(
         self, text: str, style: str = "white", msg_type: str = "system"
@@ -639,33 +650,35 @@ class Game:
         new_achievements = self.achievements.check(self)
         for ach in new_achievements:
             self.add_msg(
-                f"🏆 解锁成就: {ach.name}！", ach.get_tier_style(), "achievement"
+                f"🏆 {_('unlocked_achievement', ach.name)}",
+                ach.get_tier_style(),
+                "achievement",
             )
 
     def toggle_pause(self) -> None:
         """切换暂停状态"""
         self.paused = not self.paused
         if self.paused:
-            self.add_msg("游戏已暂停", "yellow", "system")
+            self.add_msg(_("game_paused_msg"), "yellow", "system")
         else:
-            self.add_msg("游戏继续", "green", "system")
+            self.add_msg(_("game_resumed"), "green", "system")
 
     def save_game(self, slot: int = 0) -> bool:
         """保存游戏"""
         success = self.save_manager.save(self, slot)
         if success:
-            self.add_msg(f"游戏已保存到槽位 {slot}", "green", "system")
+            self.add_msg(_("game_saved", slot), "green", "system")
         else:
-            self.add_msg("保存失败", "red", "system")
+            self.add_msg(_("save_failed"), "red", "system")
         return success
 
     def load_game(self, slot: int = 0) -> bool:
         """加载游戏"""
         success = self.save_manager.load(self, slot)
         if success:
-            self.add_msg(f"已从槽位 {slot} 加载游戏", "green", "system")
+            self.add_msg(_("game_loaded", slot), "green", "system")
         else:
-            self.add_msg("加载失败", "red", "system")
+            self.add_msg(_("load_failed"), "red", "system")
         return success
 
     def reset(self) -> None:
@@ -802,18 +815,16 @@ class Game:
             self.cmd_suggestions = (
                 self.commands.get_suggestions("") if self.commands else []
             )
-            self.add_msg("进入命令模式，按 Esc 退出", "cyan", "system")
+            self.add_msg(_("enter_cmd_mode"), "cyan", "system")
         elif key == "?":
-            self.add_msg(
-                "WASD/方向键:移动  空格:等待  B:商店  P:暂停  /:命令", "dim", "info"
-            )
+            self.add_msg(_("controls_hint"), "dim", "info")
 
     def handle_command_input(self, key: str) -> None:
         if key == "\x1b":
             self.cmd_mode = False
             self.cmd_buffer = ""
             self.cmd_suggestions = []
-            self.add_msg("退出命令模式", "dim", "info")
+            self.add_msg(_("exit_cmd_mode"), "dim", "info")
         elif key == "\r" or key == "\n":
             if self.commands and self.cmd_buffer.strip():
                 result = self.commands.execute("/" + self.cmd_buffer.strip())

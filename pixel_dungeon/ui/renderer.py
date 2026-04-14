@@ -13,6 +13,7 @@ from rich import box
 
 from ..config import CONFIG
 from ..assets import GAME_ASSETS, TileType, get_tile_asset
+from ..utils.i18n import _
 
 
 class Renderer:
@@ -238,7 +239,7 @@ class Renderer:
 
         return Panel(
             map_text,
-            title=f"[bold cyan]地牢 - 第 {game.floor} 层[/bold cyan]",
+            title=f"[bold cyan]{_('floor_transition', game.floor).strip()}[/bold cyan]",
             border_style="cyan",
             box=box.ROUNDED,
             padding=(0, 0),
@@ -338,7 +339,7 @@ class Renderer:
 
         return Panel(
             mm_text,
-            title="[bold cyan]地图[/bold cyan]",
+            title=f"[bold cyan]{_('map')}[/bold cyan]",
             border_style="cyan",
             box=box.ROUNDED,
             padding=(0, 0),
@@ -351,7 +352,7 @@ class Renderer:
         text = Text()
         sprite, _ = p.get_render_sprite()
         text.append(f"{sprite[0]} ", style="bright_green")
-        text.append(f"{p.level}级\n", style="bold yellow")
+        text.append(f"Lv.{p.level}{_('level_suffix')}\n", style="bold yellow")
 
         hp_bar, hp_filled = self.get_bar(p.hp, p.max_hp, 14)
         text.append("生命 ", style="red")
@@ -420,23 +421,23 @@ class Renderer:
             return t
 
         table.add_row(
-            cell("♛", "bright_green", "勇者"),
-            cell("⚚", "bright_cyan", "法师"),
-            cell("⚔", "bright_red", "刺客"),
-            cell("⚕", "bright_yellow", "圣骑"),
-            cell("◉", "green", "史莱姆"),
-            cell("◓", "yellow", "哥布林"),
+            cell("♛", "bright_green", _("hero")),
+            cell("⚚", "bright_cyan", _("mage")),
+            cell("⚔", "bright_red", _("assassin")),
+            cell("⚕", "bright_yellow", _("paladin")),
+            cell("◉", "green", _("slime")),
+            cell("◓", "yellow", _("goblin")),
         )
         table.add_row(
-            cell("☠", "white", "骷髅"),
-            cell("◈", "red", "兽人"),
-            cell("◐", "magenta", "暗影"),
-            cell("♥", "bright_red", "血瓶"),
-            cell("◆", "bright_yellow", "金币"),
-            cell("⌂", "bright_cyan", "出口"),
+            cell("☠", "white", _("skeleton")),
+            cell("◈", "red", _("orc")),
+            cell("◐", "magenta", _("shadow")),
+            cell("♥", "bright_red", _("potion")),
+            cell("◆", "bright_yellow", _("gold")),
+            cell("⌂", "bright_cyan", _("exit")),
         )
         table.add_row(
-            cell("▓", "bright_black", "墙壁"),
+            cell("▓", "bright_black", _("wall")),
             Text("WASD移动 B商店 P暂停 S存档 R重启 M菜单 ?帮助 /命令", style="dim"),
             Text(),
             Text(),
@@ -454,18 +455,18 @@ class Renderer:
 
     def create_help_panel(self) -> Panel:
         text = Text()
-        text.append("游戏帮助\n\n", style="bold yellow")
-        text.append("WASD / 方向键  移动和攻击\n", style="white")
-        text.append("空格           等待一回合\n", style="white")
-        text.append("B              打开商店\n", style="white")
-        text.append("P              暂停/继续\n", style="white")
-        text.append("/ 或 Ctrl+X    命令模式\n", style="white")
-        text.append("?              显示帮助\n", style="white")
-        text.append("Q              退出游戏\n", style="white")
+        text.append(f"{_('game_help')}\n\n", style="bold yellow")
+        text.append(f"{_('move_attack')}\n", style="white")
+        text.append(f"{_('space_wait')}\n", style="white")
+        text.append(f"{_('b_shop')}\n", style="white")
+        text.append(f"{_('p_pause')}\n", style="white")
+        text.append(f"{_('cmd_mode')}\n", style="white")
+        text.append(f"{_('q_show_help')}\n", style="white")
+        text.append(f"{_('q_quit')}\n", style="white")
 
         return Panel(
             text,
-            title="[bold yellow]帮助[/bold yellow]",
+            title=f"[bold yellow]{_('help')}[/bold yellow]",
             border_style="yellow",
             box=box.ROUNDED,
             height=12,
@@ -490,7 +491,9 @@ class Renderer:
         panel_main, panel_dim = rarity_panel_styles.get(sel_rarity, ("white", "dim"))
 
         text = Text()
-        text.append(self._glitch_text("升级选择!", frame, f"bold {panel_main}", 0.15))
+        text.append(
+            self._glitch_text(_("upgrade_choice"), frame, f"bold {panel_main}", 0.15)
+        )
         text.append("\n\n", style="")
 
         for i, upgrade in enumerate(game.upgrades[:3]):
@@ -508,14 +511,14 @@ class Renderer:
             text.append(f"    {upgrade.description}\n", style="dim")
             text.append("\n", style="")
 
-        text.append("1-3 选择升级", style="dim")
+        text.append(_("choose_upgrade"), style="dim")
 
         pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
         border = panel_main if frame % 24 < 12 else panel_dim
 
         return Panel(
             Align.center(text, vertical="middle"),
-            title=f"[bold {panel_main}]升级[/bold {panel_main}]",
+            title=f"[bold {panel_main}]{_('upgrade')}[/bold {panel_main}]",
             border_style=border,
             box=pulse_box,
             width=46,
@@ -524,7 +527,7 @@ class Renderer:
 
     def create_shop_panel(self, game) -> Panel:
         text = Text()
-        text.append("商店\n\n", style="bold yellow")
+        text.append(f"{_('shop')}\n\n", style="bold yellow")
 
         items = game.shop.items
         for i, item in enumerate(items):
@@ -536,11 +539,13 @@ class Renderer:
             text.append(f"    {item.description}\n", style="dim")
 
         text.append("\n")
-        text.append("W/S - 切换  Enter - 购买  Esc - 关闭", style="dim")
+        text.append(
+            f"{_('ws_switch')}  {_('enter_buy')}  {_('esc_close')}", style="dim"
+        )
 
         return Panel(
             text,
-            title="[bold yellow]商店[/bold yellow]",
+            title=f"[bold yellow]{_('shop')}[/bold yellow]",
             border_style="yellow",
             box=box.ROUNDED,
             height=20,
@@ -551,19 +556,23 @@ class Renderer:
 
         text = Text()
         text.append("\n")
-        text.append("💀 游戏结束 💀\n\n", style="bold red")
-        text.append(f"你到达了第 {game.floor} 层\n", style="yellow")
-        text.append(f"最终等级: {p.level}\n", style="cyan")
-        text.append(f"击杀敌人: {game.stats.get('enemies_killed', 0)}\n", style="red")
+        text.append(f"💀 {_('game_over')} 💀\n\n", style="bold red")
+        text.append(f"{_('reached_floor', game.floor)}\n", style="yellow")
+        text.append(f"{_('final_level')}: {p.level}\n", style="cyan")
         text.append(
-            f"获得金币: {game.stats.get('total_gold_earned', 0)}G\n", style="yellow"
+            f"{_('enemies_killed')}: {game.stats.get('enemies_killed', 0)}\n",
+            style="red",
+        )
+        text.append(
+            f"{_('gold_earned')}: {game.stats.get('total_gold_earned', 0)}G\n",
+            style="yellow",
         )
         text.append("\n")
-        text.append("R - 重新开始  M - 主菜单  Q - 退出", style="dim")
+        text.append(f"{_('r_restart_m_menu_q_quit')}", style="dim")
 
         return Panel(
             Align.center(text, vertical="middle"),
-            title="[bold red]Game Over[/bold red]",
+            title=f"[bold red]{_('game_over')}[/bold red]",
             border_style="red",
             box=box.DOUBLE,
             width=40,
@@ -589,20 +598,20 @@ class Renderer:
 
     def create_pause_panel(self, frame: int = 0) -> Panel:
         text = Text()
-        text.append(self._glitch_text("游戏暂停", frame, "bold yellow", 0.18))
+        text.append(self._glitch_text(_("game_paused"), frame, "bold yellow", 0.18))
         text.append("\n\n", style="")
-        text.append("P - 继续游戏\n", style="white")
-        text.append("S - 保存游戏\n", style="white")
-        text.append("R - 重新开始\n", style="white")
-        text.append("M - 返回主菜单\n", style="white")
-        text.append("Q - 退出游戏\n", style="white")
+        text.append(f"{_('p_resume')}\n", style="white")
+        text.append(f"{_('s_save_game')}\n", style="white")
+        text.append(f"{_('r_restart_game')}\n", style="white")
+        text.append(f"{_('m_return_menu')}\n", style="white")
+        text.append(f"{_('q_quit_game')}\n", style="white")
 
         pulse_box = box.DOUBLE if frame % 30 < 15 else box.ROUNDED
         border = "bright_yellow" if frame % 40 < 20 else "yellow"
 
         return Panel(
             Align.center(text, vertical="middle"),
-            title="[bold yellow]暂停[/bold yellow]",
+            title=f"[bold yellow]{_('game_paused')}[/bold yellow]",
             border_style=border,
             box=pulse_box,
             width=30,
@@ -612,7 +621,11 @@ class Renderer:
     def create_transition_panel(self, game, frame: int = 0) -> Panel:
         import random
 
-        base = game.transition_text if hasattr(game, "transition_text") else "传送中..."
+        base = (
+            game.transition_text
+            if hasattr(game, "transition_text")
+            else _("teleporting")
+        )
         glitch_chars = ["▓", "▒", "░", "█", "▀", "▄", "▌", "▐"]
         glitch_prob = 0.25 if frame % 8 < 4 else 0.05
 
@@ -706,7 +719,7 @@ class Renderer:
         layout = self.render_game(game)
 
         text = Text()
-        text.append("命令模式  ", style="bold yellow")
+        text.append(f"{_('cmd_mode_overlay')}  ", style="bold yellow")
         text.append("/", style="dim")
         text.append(cmd_buffer, style="white")
 
