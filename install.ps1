@@ -1,3 +1,4 @@
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = "Stop"
 
 function Show-Banner {
@@ -15,20 +16,35 @@ Show-Banner
 
 Write-Host "==> 检查环境..."
 
-$PythonCmd = ""
+function Test-Python {
+    param([string]$Cmd)
+    if (-not (Get-Command $Cmd -ErrorAction SilentlyContinue)) {
+        return $null
+    }
+    try {
+        $ver = & $Cmd -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+        if ($ver -match '^\d+\.\d+$') {
+            return $ver
+        }
+    } catch {}
+    return $null
+}
+
+$PythonCmd = $null
+$VersionStr = $null
 foreach ($cmd in @("python3", "python", "py")) {
-    if (Get-Command $cmd -ErrorAction SilentlyContinue) {
+    $VersionStr = Test-Python $cmd
+    if ($VersionStr) {
         $PythonCmd = $cmd
         break
     }
 }
 
 if (-not $PythonCmd) {
-    Write-Error "错误: 未找到 Python，请先安装 Python 3.7+"
+    Write-Error "错误: 未找到可用的 Python，请先安装 Python 3.7+"
     exit 1
 }
 
-$VersionStr = & $PythonCmd -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
 $VersionParts = $VersionStr -split '\.'
 $Major = [int]$VersionParts[0]
 $Minor = [int]$VersionParts[1]
@@ -45,7 +61,7 @@ try {
     Write-Host "   rich: 已安装"
 } catch {
     Write-Host "==> 安装依赖 rich..."
-    pip install rich | Out-Null
+    & $PythonCmd -m pip install rich | Out-Null
     try {
         & $PythonCmd -c "import rich" | Out-Null
     } catch {
@@ -79,11 +95,11 @@ $BatchContent = @"
 set PIXEL_DUNGEON_HOME=$InstallDir
 cd /d "%PIXEL_DUNGEON_HOME%"
 if /I "%1"=="update" (
-    python3 pixel_dungeon.py --update %*
+    $PythonCmd pixel_dungeon.py --update %*
 ) else if /I "%1"=="uninstall" (
-    python3 pixel_dungeon.py --uninstall %*
+    $PythonCmd pixel_dungeon.py --uninstall %*
 ) else (
-    python3 pixel_dungeon.py %*
+    $PythonCmd pixel_dungeon.py %*
 )
 "@
 Set-Content -Path $Wrapper -Value $BatchContent -Encoding ASCII
