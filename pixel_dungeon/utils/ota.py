@@ -27,6 +27,49 @@ def get_latest_version() -> tuple[str, str] | None:
         return None
 
 
+def check_update_available() -> tuple[bool, str]:
+    latest = get_latest_version()
+    if latest:
+        tag, _ = latest
+        if tag != VERSION:
+            return True, tag
+        return False, VERSION
+
+    root = Path(__file__).parent.parent.parent.resolve()
+    if not is_git_repo(root):
+        return False, VERSION
+
+    try:
+        subprocess.run(
+            ["git", "fetch", "origin", "master"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        local = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        remote = subprocess.run(
+            ["git", "rev-parse", "origin/master"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if local.returncode == 0 and remote.returncode == 0:
+            if local.stdout.strip() != remote.stdout.strip():
+                return True, "master"
+    except Exception:
+        pass
+
+    return False, VERSION
+
+
 def is_git_repo(path: Path) -> bool:
     return (path / ".git").is_dir()
 
@@ -48,9 +91,11 @@ def update_via_git(path: Path) -> tuple[bool, str]:
 
 
 def check_and_update() -> tuple[bool, str]:
+    from .i18n import _
+
     root = Path(__file__).parent.parent.parent.resolve()
     if not is_git_repo(root):
-        return False, "暂不支持非 Git 仓库的自动更新，请手动下载新版本"
+        return False, _("not_git_repo")
 
     try:
         fetch = subprocess.run(
@@ -61,7 +106,7 @@ def check_and_update() -> tuple[bool, str]:
             check=False,
         )
         if fetch.returncode != 0:
-            return False, "无法连接到更新服务器"
+            return False, _("cannot_connect_server")
 
         local = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -79,7 +124,7 @@ def check_and_update() -> tuple[bool, str]:
         )
         if local.returncode == 0 and remote.returncode == 0:
             if local.stdout.strip() == remote.stdout.strip():
-                return True, f"当前已是最新版本 {VERSION}"
+                return True, _("latest_version", VERSION)
 
         ok, msg = update_via_git(root)
         if ok:
@@ -87,14 +132,15 @@ def check_and_update() -> tuple[bool, str]:
                 "already up to date" in msg.lower()
                 or "already up-to-date" in msg.lower()
             ):
-                return True, f"当前已是最新版本 {VERSION}"
-            return True, "已更新到最新版本，请重启游戏"
-        return False, f"更新失败: {msg}"
+                return True, _("latest_version", VERSION)
+            return True, _("updated_restart")
+        return False, _("update_failed", msg)
     except Exception as e:
-        return False, f"更新失败: {e}"
+        return False, _("update_failed", e)
 
 
 def uninstall() -> tuple[bool, str]:
+    from .i18n import _
     import shutil
     import platform
 
@@ -117,13 +163,13 @@ def uninstall() -> tuple[bool, str]:
     messages = []
     if install_dir.exists():
         shutil.rmtree(install_dir)
-        messages.append(f"已删除 {install_dir}")
+        messages.append(_("deleted", install_dir))
     else:
-        messages.append("安装目录不存在")
+        messages.append(_("install_dir_not_exist"))
 
     if wrapper.exists():
         wrapper.unlink()
-        messages.append(f"已删除启动器 {wrapper}")
+        messages.append(_("deleted_launcher", wrapper))
 
     for rc in [Path.home() / ".bashrc", Path.home() / ".zshrc"]:
         if rc.exists():
@@ -133,7 +179,7 @@ def uninstall() -> tuple[bool, str]:
             )
             if new_content != content:
                 rc.write_text(new_content, encoding="utf-8")
-                messages.append(f"已清理 {rc}")
+                messages.append(_("cleaned_rc", rc))
 
     return True, "\n".join(messages)
 

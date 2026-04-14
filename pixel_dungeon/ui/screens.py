@@ -13,6 +13,7 @@ from rich.live import Live
 
 from ..input_handler import CrossPlatformInputHandler
 from ..utils.save_load import SaveManager
+from ..utils.i18n import _
 from ..config import CONFIG
 
 
@@ -80,7 +81,10 @@ def create_matrix_transition_layout(frame: int, console) -> Layout:
 
 
 def create_modern_title(
-    frame: int = 0, menu_index: int = 0, has_save: bool = False
+    frame: int = 0,
+    menu_index: int = 0,
+    has_save: bool = False,
+    update_info: dict = None,
 ) -> Layout:
     import random
 
@@ -116,34 +120,50 @@ def create_modern_title(
                 logo_text.append(ch, style=style)
         logo_text.append("\n")
 
+    if update_info and update_info.get("available"):
+        version = update_info.get("version", "")
+        notice = f"🎉 {_('update_available', version)}! {_('press_u_to_update')}"
+        pad = max(0, 60 - len(notice)) // 2
+        logo_text.append(" " * pad + notice + "\n", style="bold yellow")
+
     features = [
-        ("♛", "bright_green", "4种角色", "勇者·法师·刺客·圣骑"),
-        ("✦", "bright_red", "5种敌人", "史莱姆·哥布林·骷髅·兽人·暗影"),
-        ("⌂", "bright_cyan", "无限地牢", "层层递进的Roguelike体验"),
-        ("★", "bright_magenta", "升级系统", "12种能力自由搭配"),
-        ("🛡", "bright_yellow", "商店系统", "购买道具强化角色"),
+        (
+            "♛",
+            "bright_green",
+            _("hero"),
+            f"4{_('characters')} {_('hero')}·{_('mage')}·{_('assassin')}·{_('paladin')}",
+        ),
+        (
+            "✦",
+            "bright_red",
+            "5" + _("enemies"),
+            f"{_('slime')}·{_('goblin')}·{_('skeleton')}·{_('orc')}·{_('shadow')}",
+        ),
+        ("⌂", "bright_cyan", _("infinite_dungeon"), _("roguelike_progression")),
+        ("★", "bright_magenta", _("upgrade_system"), "12" + _("abilities_free_build")),
+        ("🛡", "bright_yellow", _("shop_system"), _("buy_items_strengthen")),
     ]
 
     left_content = Text()
-    left_content.append("游戏特色\n", style="bold yellow underline")
-    left_content.append("─" * 20 + "\n", style="dim")
+    left_content.append(_glitch_text(_("game_features"), frame, "bold yellow", 0.15))
+    left_content.append("\n\n", style="")
     for icon, color, title, desc in features:
         left_content.append(f"{icon} ", style=color)
         left_content.append(f"{title}", style="bold")
         left_content.append(f"\n   {desc}\n", style="dim")
 
     menu_items = [
-        ("开始游戏", "start", True),
-        ("继续游戏", "continue", has_save),
-        ("游戏设置", "settings", True),
-        ("游戏帮助", "help", True),
-        ("关于", "about", True),
-        ("退出游戏", "quit", True),
+        (_("start_game"), "start", True),
+        (_("continue_game"), "continue", has_save),
+        (_("settings"), "settings", True),
+        (_("help"), "help", True),
+        (_("about"), "about", True),
+        (_("quit_game"), "quit", True),
     ]
 
     menu_content = Text()
-    menu_content.append("主菜单\n", style="bold cyan underline")
-    menu_content.append("─" * 16 + "\n", style="dim")
+    menu_content.append(_glitch_text(_("main_menu"), frame, "bold cyan underline"))
+    menu_content.append("\n─" * 16 + "\n", style="dim")
     for i, (label, action, enabled) in enumerate(menu_items):
         is_selected = i == menu_index
         prefix = ">>> " if is_selected else "     "
@@ -159,14 +179,14 @@ def create_modern_title(
         )
 
     controls = [
-        ("WASD/↑↓", "选择"),
-        ("Enter", "确认"),
-        ("Q", "退出"),
+        ("WASD/↑↓", _("select")),
+        ("Enter", _("confirm")),
+        ("Q", _("quit")),
     ]
 
     controls_content = Text()
-    controls_content.append("操作\n", style="bold cyan underline")
-    controls_content.append("─" * 12 + "\n", style="dim")
+    controls_content.append(_glitch_text(_("controls"), frame, "bold cyan underline"))
+    controls_content.append("\n─" * 12 + "\n", style="dim")
     for key, action in controls:
         controls_content.append(f"{key:>8}", style="bold white on dark_blue")
         controls_content.append(f"  {action}\n", style="white")
@@ -183,14 +203,14 @@ def create_modern_title(
         left_content,
         border_style="yellow",
         box=box.ROUNDED,
-        title="[yellow]✨ 特色[/yellow]",
+        title="[yellow]✨ " + _("game_features") + "[/yellow]",
         height=panel_height,
     )
     menu_panel = Panel(
         menu_content,
         border_style="green",
         box=box.ROUNDED if menu_index != 0 else box.DOUBLE,
-        title="[green]🎮 菜单[/green]",
+        title="[green]🎮 " + _("main_menu") + "[/green]",
         width=28,
         height=panel_height,
     )
@@ -198,7 +218,7 @@ def create_modern_title(
         controls_content,
         border_style="cyan",
         box=box.ROUNDED,
-        title="[cyan]⌨ 操作[/cyan]",
+        title="[cyan]⌨ " + _("controls") + "[/cyan]",
         width=24,
         height=panel_height,
     )
@@ -249,26 +269,26 @@ def create_modern_title(
 
 def create_help_screen(frame: int = 0) -> Layout:
     text = Text()
-    text.append(_glitch_text("游戏帮助", frame, "bold green", 0.15))
+    text.append(_glitch_text(_("game_help"), frame, "bold green", 0.15))
     text.append("\n\n", style="")
-    text.append("WASD / 方向键  移动和攻击\n", style="white")
-    text.append("空格           等待一回合，恢复生命\n", style="white")
-    text.append("B              打开商店\n", style="white")
-    text.append("P              暂停/继续游戏\n", style="white")
-    text.append("S              保存游戏\n", style="white")
-    text.append("R              重新开始\n", style="white")
-    text.append("M              返回主菜单\n", style="white")
-    text.append("/ 或 Ctrl+X    命令模式\n", style="white")
-    text.append("?              显示帮助\n", style="white")
-    text.append("Q              退出游戏\n", style="white")
-    text.append("\n按任意键返回主菜单...", style="dim")
+    text.append(_("move_attack") + "\n", style="white")
+    text.append(_("space_wait") + "\n", style="white")
+    text.append(_("b_shop") + "\n", style="white")
+    text.append(_("p_pause") + "\n", style="white")
+    text.append(_("s_save") + "\n", style="white")
+    text.append(_("r_restart") + "\n", style="white")
+    text.append(_("m_menu") + "\n", style="white")
+    text.append(_("cmd_mode") + "\n", style="white")
+    text.append(_("q_show_help") + "\n", style="white")
+    text.append(_("q_quit") + "\n", style="white")
+    text.append("\n" + _("return_menu_any"), style="dim")
 
     pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
     border = "bright_green" if frame % 24 < 12 else "green"
 
     panel = Panel(
         Align.center(text, vertical="middle"),
-        title="[bold green]帮助[/bold green]",
+        title="[bold green]" + _("help") + "[/bold green]",
         border_style=border,
         box=pulse_box,
         width=50,
@@ -286,23 +306,23 @@ def create_help_screen(frame: int = 0) -> Layout:
 
 def create_about_screen(frame: int = 0, extra_msg: str = "") -> Layout:
     text = Text()
-    text.append(_glitch_text("关于 像素地牢", frame, "bold cyan", 0.15))
+    text.append(_glitch_text(_("about_pixel_dungeon"), frame, "bold cyan", 0.15))
     text.append("\n\n", style="")
-    text.append("版本: v1.1.0\n", style="white")
-    text.append("作者: muselinn & opencode\n", style="white")
-    text.append("GitHub: github.com/muselinn/pixel-dungeon\n", style="dim cyan")
-    text.append("引擎: Python + Rich TUI\n", style="white")
+    text.append(_("version") + ": v1.1.0\n", style="white")
+    text.append(_("author") + ": muselinn & opencode\n", style="white")
+    text.append(_("github_repo") + "\n", style="dim cyan")
+    text.append(_("engine") + ": Python + Rich TUI\n", style="white")
     if extra_msg:
         text.append(f"\n{extra_msg}\n", style="bright_yellow")
-    text.append("\n感谢游玩！\n", style="bright_yellow")
-    text.append("\nU - 检查更新  任意键 - 返回主菜单", style="dim")
+    text.append("\n" + _("thanks") + "\n", style="bright_yellow")
+    text.append("\n" + _("u_check_update"), style="dim")
 
     pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
     border = "bright_cyan" if frame % 24 < 12 else "cyan"
 
     panel = Panel(
         Align.center(text, vertical="middle"),
-        title=f"[bold {border}]关于[/bold {border}]",
+        title=f"[bold {border}]" + _("about") + f"[/bold {border}]",
         border_style=border,
         box=pulse_box,
         width=46,
@@ -335,11 +355,16 @@ def show_help(live_or_input, frame: int = 0) -> None:
 def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
     fps_options = [15, 30, 60]
     fps_index = fps_options.index(CONFIG.fps) if CONFIG.fps in fps_options else 1
-    diff_labels = {"easy": "简单", "normal": "普通", "hard": "困难"}
+    diff_labels = {
+        "easy": _("easy"),
+        "normal": _("normal"),
+        "hard": _("hard"),
+    }
+    lang_labels = {"zh_CN": "中文", "en_US": "English"}
 
     items = [
         (
-            "帧率",
+            _("fps"),
             " ".join(
                 [
                     f"[{v}]" if i == fps_index else f" {v} "
@@ -347,14 +372,21 @@ def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
                 ]
             ),
         ),
-        ("光照效果", "[开]" if CONFIG.lighting else "[关]"),
-        ("粒子效果", "[开]" if CONFIG.particles else "[关]"),
-        ("难度", f"[{diff_labels.get(CONFIG.difficulty, CONFIG.difficulty)}]"),
-        ("返回主菜单", ""),
+        (
+            _("lighting"),
+            "[" + _("on") + "]" if CONFIG.lighting else "[" + _("off") + "]",
+        ),
+        (
+            _("particles"),
+            "[" + _("on") + "]" if CONFIG.particles else "[" + _("off") + "]",
+        ),
+        (_("difficulty"), f"[{diff_labels.get(CONFIG.difficulty, CONFIG.difficulty)}]"),
+        ("语言", f"[{lang_labels.get(CONFIG.language, CONFIG.language)}]"),
+        (_("return_main_menu"), ""),
     ]
 
     text = Text()
-    text.append(_glitch_text("游戏设置", frame, "bold yellow", 0.15))
+    text.append(_glitch_text(_("game_settings"), frame, "bold yellow", 0.15))
     text.append("\n\n", style="")
     for i, (label, value) in enumerate(items):
         is_selected = i == selected_index
@@ -368,17 +400,17 @@ def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
 
     panel = Panel(
         Align.center(text, vertical="middle"),
-        title="[bold yellow]设置[/bold yellow]",
+        title="[bold yellow]" + _("settings") + "[/bold yellow]",
         border_style=border,
         box=pulse_box,
         width=42,
-        height=15,
+        height=17,
     )
 
     layout = Layout()
     layout.split_column(
         Layout(Text(" "), ratio=1),
-        Layout(Align.center(panel, vertical="middle"), size=15),
+        Layout(Align.center(panel, vertical="middle"), size=17),
         Layout(Text(" "), ratio=1),
     )
     return layout
@@ -392,12 +424,12 @@ def show_title_screen() -> tuple:
     has_save = save_manager.exists(0)
 
     menu_items = [
-        ("开始游戏", "start", True),
-        ("继续游戏", "continue", has_save),
-        ("游戏设置", "settings", True),
-        ("游戏帮助", "help", True),
-        ("关于", "about", True),
-        ("退出游戏", "quit", True),
+        (_("start_game"), "start", True),
+        (_("continue_game"), "continue", has_save),
+        (_("settings"), "settings", True),
+        (_("help"), "help", True),
+        (_("about"), "about", True),
+        (_("quit_game"), "quit", True),
     ]
     menu_index = 0
 
@@ -406,7 +438,6 @@ def show_title_screen() -> tuple:
 
     fps_options = [15, 30, 60]
     diff_options = ["easy", "normal", "hard"]
-    diff_labels = {"easy": "简单", "normal": "普通", "hard": "困难"}
 
     def _cycle_diff(delta: int) -> None:
         cur = (
@@ -417,6 +448,23 @@ def show_title_screen() -> tuple:
         new_i = (cur + delta) % len(diff_options)
         CONFIG.difficulty = diff_options[new_i]
         CONFIG.save_settings()
+
+    update_info = {"available": False, "version": "", "checked": False}
+
+    def _check_update():
+        try:
+            from ..utils.ota import check_update_available
+
+            available, version = check_update_available()
+            update_info["available"] = available
+            update_info["version"] = version
+        except Exception:
+            pass
+        update_info["checked"] = True
+
+    import threading
+
+    threading.Thread(target=_check_update, daemon=True).start()
 
     try:
         with Live(screen=True, refresh_per_second=10) as live:
@@ -459,7 +507,7 @@ def show_title_screen() -> tuple:
                         if key == "UP" or key == "w" or key == "W":
                             settings_index = max(0, settings_index - 1)
                         elif key == "DOWN" or key == "s" or key == "S":
-                            settings_index = min(4, settings_index + 1)
+                            settings_index = min(5, settings_index + 1)
                         elif key == "LEFT" or key == "a" or key == "A":
                             if settings_index == 0:
                                 cur = (
@@ -475,6 +523,18 @@ def show_title_screen() -> tuple:
                                 CONFIG.particles = not CONFIG.particles
                             elif settings_index == 3:
                                 _cycle_diff(-1)
+                            elif settings_index == 4:
+                                lang_options = ["zh_CN", "en_US"]
+                                cur = (
+                                    lang_options.index(CONFIG.language)
+                                    if CONFIG.language in lang_options
+                                    else 0
+                                )
+                                new_i = max(0, cur - 1)
+                                CONFIG.language = lang_options[new_i]
+                                from ..utils.i18n import set_language
+
+                                set_language(CONFIG.language)
                             CONFIG.save_settings()
                         elif key == "RIGHT" or key == "d" or key == "D":
                             if settings_index == 0:
@@ -491,6 +551,18 @@ def show_title_screen() -> tuple:
                                 CONFIG.particles = not CONFIG.particles
                             elif settings_index == 3:
                                 _cycle_diff(1)
+                            elif settings_index == 4:
+                                lang_options = ["zh_CN", "en_US"]
+                                cur = (
+                                    lang_options.index(CONFIG.language)
+                                    if CONFIG.language in lang_options
+                                    else 0
+                                )
+                                new_i = min(len(lang_options) - 1, cur + 1)
+                                CONFIG.language = lang_options[new_i]
+                                from ..utils.i18n import set_language
+
+                                set_language(CONFIG.language)
                             CONFIG.save_settings()
                         elif key == "\r" or key == "\n":
                             if settings_index == 0:
@@ -513,19 +585,45 @@ def show_title_screen() -> tuple:
                                 _cycle_diff(1)
                                 CONFIG.save_settings()
                             elif settings_index == 4:
+                                lang_options = ["zh_CN", "en_US"]
+                                cur = (
+                                    lang_options.index(CONFIG.language)
+                                    if CONFIG.language in lang_options
+                                    else 0
+                                )
+                                new_i = (cur + 1) % len(lang_options)
+                                CONFIG.language = lang_options[new_i]
+                                from ..utils.i18n import set_language
+
+                                set_language(CONFIG.language)
+                                CONFIG.save_settings()
+                            elif settings_index == 5:
                                 showing_settings = False
                         elif key == "\x1b" or key.lower() == "q":
                             showing_settings = False
                     time.sleep(0.05)
                     continue
 
-                layout = create_modern_title(frame, menu_index, has_save)
+                layout = create_modern_title(frame, menu_index, has_save, update_info)
                 live.update(layout)
 
                 key = input_handler.get_key()
                 if key:
                     if key in char_map:
                         selected_char = char_map[key]
+                    elif key.lower() == "u":
+                        from ..utils.ota import check_and_update
+
+                        ok, msg = check_and_update()
+                        update_info["available"] = False
+                        live.update(
+                            create_modern_title(
+                                frame, menu_index, has_save, {"available": False}
+                            )
+                        )
+                        time.sleep(0.3)
+                        live.update(create_about_screen(frame, extra_msg=msg))
+                        time.sleep(1.5)
                     elif key == "UP" or key == "w" or key == "W":
                         new_index = menu_index - 1
                         while new_index >= 0:
