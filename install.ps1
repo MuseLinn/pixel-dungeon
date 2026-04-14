@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$RepoUrl = "https://github.com/MuseLinn/pixel-dungeon.git"
+$RepoUrl = "https://github.com/muselinn/pixel-dungeon.git"
 $InstallDir = if ($env:PIXEL_DUNGEON_HOME) { $env:PIXEL_DUNGEON_HOME } else { Join-Path $env:LOCALAPPDATA "pixel-dungeon" }
 $BinDir = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps"
 $Wrapper = Join-Path $BinDir "pixel-dungeon.bat"

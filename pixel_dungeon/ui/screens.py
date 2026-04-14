@@ -289,7 +289,8 @@ def create_about_screen(frame: int = 0, extra_msg: str = "") -> Layout:
     text.append(_glitch_text("关于 像素地牢", frame, "bold cyan", 0.15))
     text.append("\n\n", style="")
     text.append("版本: v1.0\n", style="white")
-    text.append("作者: 你 & Sisyphus\n", style="white")
+    text.append("作者: muselinn & opencode\n", style="white")
+    text.append("GitHub: github.com/muselinn/pixel-dungeon\n", style="dim cyan")
     text.append("引擎: Python + Rich TUI\n", style="white")
     if extra_msg:
         text.append(f"\n{extra_msg}\n", style="bright_yellow")
@@ -305,13 +306,13 @@ def create_about_screen(frame: int = 0, extra_msg: str = "") -> Layout:
         border_style=border,
         box=pulse_box,
         width=46,
-        height=14 if extra_msg else 12,
+        height=15 if extra_msg else 13,
     )
 
     layout = Layout()
     layout.split_column(
         Layout(Text(" "), ratio=1),
-        Layout(Align.center(panel, vertical="middle"), size=(14 if extra_msg else 12)),
+        Layout(Align.center(panel, vertical="middle"), size=(15 if extra_msg else 13)),
         Layout(Text(" "), ratio=1),
     )
     return layout

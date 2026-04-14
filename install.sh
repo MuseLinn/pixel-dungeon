@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO_URL="https://github.com/MuseLinn/pixel-dungeon.git"
+REPO_URL="https://github.com/muselinn/pixel-dungeon.git"
 INSTALL_DIR="${PIXEL_DUNGEON_HOME:-$HOME/.local/share/pixel-dungeon}"
 BIN_DIR="$HOME/.local/bin"
 WRAPPER="$BIN_DIR/pixel-dungeon"

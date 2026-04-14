@@ -8,7 +8,7 @@ import urllib.request
 from pathlib import Path
 
 VERSION = "1.0.0"
-REPO = "MuseLinn/pixel-dungeon"
+REPO = "muselinn/pixel-dungeon"
 GITHUB_API = f"https://api.github.com/repos/{REPO}/releases/latest"
 
 

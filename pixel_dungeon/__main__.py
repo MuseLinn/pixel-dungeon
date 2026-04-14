@@ -48,12 +48,12 @@ def main():
         if platform.system() == "Windows":
             print("请在 PowerShell 中运行:")
             print(
-                "  iwr -useb https://raw.githubusercontent.com/MuseLinn/pixel-dungeon/master/uninstall.ps1 | iex"
+                "  iwr -useb https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/uninstall.ps1 | iex"
             )
         else:
             print("请在终端中运行:")
             print(
-                "  curl -sSL https://raw.githubusercontent.com/MuseLinn/pixel-dungeon/master/uninstall.sh | bash"
+                "  curl -sSL https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/uninstall.sh | bash"
             )
         return
 
