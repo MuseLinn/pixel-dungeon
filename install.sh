@@ -6,6 +6,17 @@ INSTALL_DIR="${PIXEL_DUNGEON_HOME:-$HOME/.local/share/pixel-dungeon}"
 BIN_DIR="$HOME/.local/bin"
 WRAPPER="$BIN_DIR/pixel-dungeon"
 
+cat <<'BANNER'
+    ___ _         _   ___
+   | _ (_)_ _____| | |   \ _  _ _ _  __ _ ___ ___ _ _
+   |  _/ \ \ / -_) | | |) | || | ' \/ _` / -_) _ \ ' \
+   |_| |_/_/_\___|_| |___/ \_,_|_||_\__, \___\___/_||_|
+                                      |___/
+              P I X E L   D U N G E O N
+                   像素地牢 v1.0
+
+BANNER
+
 echo "==> 安装 Pixel Dungeon 到 $INSTALL_DIR"
 
 if [ -d "$INSTALL_DIR" ]; then
