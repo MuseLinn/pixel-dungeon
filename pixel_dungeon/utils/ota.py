@@ -48,22 +48,40 @@ def update_via_git(path: Path) -> tuple[bool, str]:
 
 
 def check_and_update() -> tuple[bool, str]:
-    latest = get_latest_version()
-    if latest is None:
-        return False, "无法连接到更新服务器"
-
-    latest_ver, _ = latest
-    if latest_ver == VERSION:
-        return True, f"当前已是最新版本 {VERSION}"
-
     root = Path(__file__).parent.parent.parent.resolve()
-    if is_git_repo(root):
+    if not is_git_repo(root):
+        return False, "暂不支持非 Git 仓库的自动更新，请手动下载新版本"
+
+    try:
+        fetch = subprocess.run(
+            ["git", "fetch", "origin", "master"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if fetch.returncode != 0:
+            return False, "无法连接到更新服务器"
+
+        status = subprocess.run(
+            ["git", "status", "-uno"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if (
+            "Your branch is up to date" in status.stdout
+            or "Your branch is up-to-date" in status.stdout
+        ):
+            return True, f"当前已是最新版本 {VERSION}"
+
         ok, msg = update_via_git(root)
         if ok:
-            return True, f"已更新到 {latest_ver}，请重启游戏"
+            return True, "已更新到最新版本，请重启游戏"
         return False, f"更新失败: {msg}"
-
-    return False, "暂不支持非 Git 仓库的自动更新，请手动下载新版本"
+    except Exception as e:
+        return False, f"更新失败: {e}"
 
 
 def uninstall() -> tuple[bool, str]:
