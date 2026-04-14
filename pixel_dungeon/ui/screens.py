@@ -217,19 +217,35 @@ def create_modern_title(
 
     total_content_h = len(base_logo) + 2 + panel_height
 
+    def _decorate_spacer(width: int, style: str) -> Text:
+        import random
+
+        chars = ["▓", "▒", "░", "█", "▀", "▄", "▌", "▐", "·", "*"]
+        line = Text()
+        for _ in range(width):
+            if random.random() < 0.08:
+                line.append(random.choice(chars), style=style)
+            else:
+                line.append(" ")
+        return line
+
+    top_spacer = _decorate_spacer(80, "dim cyan")
+    bottom_spacer = _decorate_spacer(80, "dim cyan")
+
     main_layout = Layout()
     main_layout.split_column(
-        Layout(Text(" "), ratio=1),
+        Layout(top_spacer, ratio=1),
         Layout(content_layout, size=total_content_h),
-        Layout(Text(" "), ratio=1),
+        Layout(bottom_spacer, ratio=1),
     )
 
     return main_layout
 
 
-def create_help_screen() -> Layout:
+def create_help_screen(frame: int = 0) -> Layout:
     text = Text()
-    text.append("游戏帮助\n\n", style="bold green")
+    text.append(_glitch_text("游戏帮助", frame, "bold green", 0.15))
+    text.append("\n\n", style="")
     text.append("WASD / 方向键  移动和攻击\n", style="white")
     text.append("空格           等待一回合，恢复生命\n", style="white")
     text.append("B              打开商店\n", style="white")
@@ -242,11 +258,14 @@ def create_help_screen() -> Layout:
     text.append("Q              退出游戏\n", style="white")
     text.append("\n按任意键返回主菜单...", style="dim")
 
+    pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
+    border = "bright_green" if frame % 24 < 12 else "green"
+
     panel = Panel(
         Align.center(text, vertical="middle"),
         title="[bold green]帮助[/bold green]",
-        border_style="green",
-        box=box.ROUNDED,
+        border_style=border,
+        box=pulse_box,
         width=50,
         height=16,
     )
@@ -260,20 +279,24 @@ def create_help_screen() -> Layout:
     return layout
 
 
-def create_about_screen() -> Layout:
+def create_about_screen(frame: int = 0) -> Layout:
     text = Text()
-    text.append("关于 像素地牢\n\n", style="bold cyan")
+    text.append(_glitch_text("关于 像素地牢", frame, "bold cyan", 0.15))
+    text.append("\n\n", style="")
     text.append("版本: v1.0\n", style="white")
     text.append("作者: Pixel Dungeon Dev\n", style="white")
     text.append("引擎: Python + Rich TUI\n", style="white")
     text.append("\n感谢游玩！\n", style="bright_yellow")
     text.append("\n按任意键返回主菜单...", style="dim")
 
+    pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
+    border = "bright_cyan" if frame % 24 < 12 else "cyan"
+
     panel = Panel(
         Align.center(text, vertical="middle"),
-        title="[bold cyan]关于[/bold cyan]",
-        border_style="cyan",
-        box=box.ROUNDED,
+        title=f"[bold {border}]关于[/bold {border}]",
+        border_style=border,
+        box=pulse_box,
         width=46,
         height=12,
     )
@@ -287,13 +310,13 @@ def create_about_screen() -> Layout:
     return layout
 
 
-def show_help(live_or_input) -> None:
+def show_help(live_or_input, frame: int = 0) -> None:
     if hasattr(live_or_input, "update"):
-        live_or_input.update(create_help_screen())
+        live_or_input.update(create_help_screen(frame))
         time.sleep(0.1)
     else:
         with Live(screen=True, refresh_per_second=10) as live:
-            live.update(create_help_screen())
+            live.update(create_help_screen(frame))
             while True:
                 key = live_or_input.get_key()
                 if key:
@@ -399,7 +422,7 @@ def show_title_screen() -> tuple:
                 frame += 1
 
                 if showing_help:
-                    live.update(create_help_screen())
+                    live.update(create_help_screen(frame))
                     key = input_handler.get_key()
                     if key:
                         showing_help = False
@@ -407,7 +430,7 @@ def show_title_screen() -> tuple:
                     continue
 
                 if showing_about:
-                    live.update(create_about_screen())
+                    live.update(create_about_screen(frame))
                     key = input_handler.get_key()
                     if key:
                         showing_about = False
