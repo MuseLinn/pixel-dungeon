@@ -96,9 +96,9 @@ $BatchContent = @"
 set PIXEL_DUNGEON_HOME=$InstallDir
 cd /d "%PIXEL_DUNGEON_HOME%"
 if /I "%1"=="update" (
-    $PythonCmd pixel_dungeon.py --update %*
+    $PythonCmd pixel_dungeon.py --update
 ) else if /I "%1"=="uninstall" (
-    $PythonCmd pixel_dungeon.py --uninstall %*
+    $PythonCmd pixel_dungeon.py --uninstall
 ) else (
     $PythonCmd pixel_dungeon.py %*
 )
