@@ -1,5 +1,59 @@
 $ErrorActionPreference = "Stop"
 
+function Show-Banner {
+    Write-Host "    ___ _         _   ___"
+    Write-Host "   | _ (_)_ _____| | |   \ _  _ _ _  __ _ ___ ___ _ _"
+    Write-Host "   |  _/ \ \ / -_) | | |) | || | ' \/ _` / -_) _ \ ' \"
+    Write-Host "   |_| |_/_/_\___|_| |___/ \_,_|_||_\__, \___\___/_||_|"
+    Write-Host "                                      |___/"
+    Write-Host "              P I X E L   D U N G E O N"
+    Write-Host "                   像素地牢 v1.0"
+    Write-Host ""
+}
+
+Show-Banner
+
+Write-Host "==> 检查环境..."
+
+$PythonCmd = ""
+foreach ($cmd in @("python3", "python", "py")) {
+    if (Get-Command $cmd -ErrorAction SilentlyContinue) {
+        $PythonCmd = $cmd
+        break
+    }
+}
+
+if (-not $PythonCmd) {
+    Write-Error "错误: 未找到 Python，请先安装 Python 3.7+"
+    exit 1
+}
+
+$VersionStr = & $PythonCmd -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+$VersionParts = $VersionStr -split '\.'
+$Major = [int]$VersionParts[0]
+$Minor = [int]$VersionParts[1]
+
+if ($Major -lt 3 -or ($Major -eq 3 -and $Minor -lt 7)) {
+    Write-Error "错误: Python 版本过低 ($Major.$Minor)，需要 >= 3.7"
+    exit 1
+}
+
+Write-Host "   Python: $Major.$Minor ($PythonCmd)"
+
+try {
+    & $PythonCmd -c "import rich" | Out-Null
+    Write-Host "   rich: 已安装"
+} catch {
+    Write-Host "==> 安装依赖 rich..."
+    pip install rich | Out-Null
+    try {
+        & $PythonCmd -c "import rich" | Out-Null
+    } catch {
+        Write-Error "错误: 无法自动安装 rich，请手动运行: pip install rich"
+        exit 1
+    }
+}
+
 $RepoUrl = "https://github.com/muselinn/pixel-dungeon.git"
 $InstallDir = if ($env:PIXEL_DUNGEON_HOME) { $env:PIXEL_DUNGEON_HOME } else { Join-Path $env:LOCALAPPDATA "pixel-dungeon" }
 $BinDir = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps"

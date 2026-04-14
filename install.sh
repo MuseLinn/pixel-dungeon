@@ -17,6 +17,42 @@ cat <<'BANNER'
 
 BANNER
 
+echo "==> 检查环境..."
+
+PYTHON_CMD=""
+for cmd in python3 python; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+        PYTHON_CMD="$cmd"
+        break
+    fi
+done
+
+if [ -z "$PYTHON_CMD" ]; then
+    echo "错误: 未找到 Python，请先安装 Python 3.7+"
+    exit 1
+fi
+
+PY_VERSION=$($PYTHON_CMD -c 'import sys; print(sys.version_info.major, sys.version_info.minor)' 2>/dev/null)
+PY_MAJOR=$(echo "$PY_VERSION" | awk '{print $1}')
+PY_MINOR=$(echo "$PY_VERSION" | awk '{print $2}')
+
+if [ "$PY_MAJOR" -lt 3 ] || { [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 7 ]; }; then
+    echo "错误: Python 版本过低 ($PY_MAJOR.$PY_MINOR)，需要 >= 3.7"
+    exit 1
+fi
+
+echo "   Python: $PY_MAJOR.$PY_MINOR ($PYTHON_CMD)"
+
+if ! $PYTHON_CMD -c "import rich" >/dev/null 2>&1; then
+    echo "==> 安装依赖 rich..."
+    pip3 install rich 2>/dev/null || pip install rich 2>/dev/null || {
+        echo "错误: 无法自动安装 rich，请手动运行: pip3 install rich"
+        exit 1
+    }
+else
+    echo "   rich: 已安装"
+fi
+
 echo "==> 安装 Pixel Dungeon 到 $INSTALL_DIR"
 
 if [ -d "$INSTALL_DIR" ]; then
