@@ -134,7 +134,9 @@ def create_modern_title(
     menu_items = [
         ("开始游戏", "start", True),
         ("继续游戏", "continue", has_save),
+        ("游戏设置", "settings", True),
         ("游戏帮助", "help", True),
+        ("关于", "about", True),
         ("退出游戏", "quit", True),
     ]
 
@@ -217,9 +219,9 @@ def create_modern_title(
 
     main_layout = Layout()
     main_layout.split_column(
-        Layout(Text(""), ratio=1),
+        Layout(Text(" "), ratio=1),
         Layout(content_layout, size=total_content_h),
-        Layout(Text(""), ratio=1),
+        Layout(Text(" "), ratio=1),
     )
 
     return main_layout
@@ -251,9 +253,36 @@ def create_help_screen() -> Layout:
 
     layout = Layout()
     layout.split_column(
-        Layout(Text(""), ratio=1),
+        Layout(Text(" "), ratio=1),
         Layout(Align.center(panel, vertical="middle"), size=16),
-        Layout(Text(""), ratio=1),
+        Layout(Text(" "), ratio=1),
+    )
+    return layout
+
+
+def create_about_screen() -> Layout:
+    text = Text()
+    text.append("关于 像素地牢\n\n", style="bold cyan")
+    text.append("版本: v1.0\n", style="white")
+    text.append("作者: Pixel Dungeon Dev\n", style="white")
+    text.append("引擎: Python + Rich TUI\n", style="white")
+    text.append("\n感谢游玩！\n", style="bright_yellow")
+    text.append("\n按任意键返回主菜单...", style="dim")
+
+    panel = Panel(
+        Align.center(text, vertical="middle"),
+        title="[bold cyan]关于[/bold cyan]",
+        border_style="cyan",
+        box=box.ROUNDED,
+        width=46,
+        height=12,
+    )
+
+    layout = Layout()
+    layout.split_column(
+        Layout(Text(" "), ratio=1),
+        Layout(Align.center(panel, vertical="middle"), size=12),
+        Layout(Text(" "), ratio=1),
     )
     return layout
 
@@ -317,9 +346,9 @@ def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
 
     layout = Layout()
     layout.split_column(
-        Layout(Text(""), ratio=1),
+        Layout(Text(" "), ratio=1),
         Layout(Align.center(panel, vertical="middle"), size=15),
-        Layout(Text(""), ratio=1),
+        Layout(Text(" "), ratio=1),
     )
     return layout
 
@@ -336,6 +365,7 @@ def show_title_screen() -> tuple:
         ("继续游戏", "continue", has_save),
         ("游戏设置", "settings", True),
         ("游戏帮助", "help", True),
+        ("关于", "about", True),
         ("退出游戏", "quit", True),
     ]
     menu_index = 0
@@ -362,6 +392,7 @@ def show_title_screen() -> tuple:
             frame = 0
             showing_help = False
             showing_settings = False
+            showing_about = False
             settings_index = 0
 
             while True:
@@ -372,6 +403,14 @@ def show_title_screen() -> tuple:
                     key = input_handler.get_key()
                     if key:
                         showing_help = False
+                    time.sleep(0.05)
+                    continue
+
+                if showing_about:
+                    live.update(create_about_screen())
+                    key = input_handler.get_key()
+                    if key:
+                        showing_about = False
                     time.sleep(0.05)
                     continue
 
@@ -467,6 +506,8 @@ def show_title_screen() -> tuple:
                         action = menu_items[menu_index][1]
                         if action == "help":
                             showing_help = True
+                        elif action == "about":
+                            showing_about = True
                         elif action == "settings":
                             showing_settings = True
                             settings_index = 0
