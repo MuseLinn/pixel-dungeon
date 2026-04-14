@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""Pixel Dungeon 主入口"""
+
+import sys
+import argparse
+
+from .config import CONFIG
+from .core.game import Game
+from .ui.screens import show_title_screen
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="🎮 Pixel Dungeon - 像素地牢")
+    parser.add_argument("--fps", type=int, default=30, help="设置帧率 (10-60，默认 30)")
+    parser.add_argument("--no-light", action="store_true", help="关闭光照效果")
+    parser.add_argument("--no-particle", action="store_true", help="关闭粒子效果")
+    parser.add_argument(
+        "--char",
+        type=str,
+        default="default",
+        choices=["default", "mage", "rogue", "paladin"],
+        help="选择角色 (default/mage/rogue/paladin)",
+    )
+    parser.add_argument(
+        "--skip-title", action="store_true", help="跳过标题画面（直接开始）"
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    if args.fps:
+        CONFIG.set_fps(args.fps)
+    if args.no_light:
+        CONFIG.lighting = False
+    if args.no_particle:
+        CONFIG.particles = False
+
+    selected_char = args.char
+    if not args.skip_title:
+        continue_game, selected_char = show_title_screen()
+        if not continue_game:
+            print("已退出游戏")
+            return
+
+    game = Game()
+    game.init_game(char_set=selected_char)
+    game.run()
+
+
+if __name__ == "__main__":
+    main()
