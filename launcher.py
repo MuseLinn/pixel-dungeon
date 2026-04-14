@@ -23,6 +23,7 @@ def check_python():
 def check_rich():
     try:
         import rich
+
         return True
     except ImportError:
         return False
@@ -31,6 +32,7 @@ def check_rich():
 def install_rich():
     try:
         import subprocess
+
         subprocess.check_call(
             [sys.executable, "-m", "pip", "install", "rich", "-q"],
             stdout=subprocess.DEVNULL,
@@ -43,11 +45,12 @@ def install_rich():
 
 def print_logo():
     logo = """
-    ████  ████  ████  ████  ███   ███  ████   ████  ███
-    ██  ██  ██      ██  ██  ██  ██     ██  ██  ██ ██
-    ████  ██  ████  ████  ██ ██ ██  ███   ███  ██  ██
-    ██  ██  ██      ██  ██  ██  ██     ██  ██ ██
-    ████  ████  ████  ██   ███   ███  ████   ████  ██  ██
+    ____  _           __   ____
+   / __ \(_)  _____  / /  / __ \__  ______  ____ ____  ____  ____
+  / /_/ / / |/_/ _ \/ /  / / / / / / / __ \/ __ `/ _ \/ __ \/ __ \
+ / ____/ />  </  __/ /  / /_/ / /_/ / / / / /_/ /  __/ /_/ / / / /
+/_/   /_/_/|_|\___/_/  /_____/\__,_/_/ /_/\__, /\___/\____/_/ /_/
+                                         /____/
 
               P I X E L   D U N G E O N
                    像素地牢 v1.0
@@ -58,11 +61,11 @@ def print_logo():
 def spinner_animation(text, duration=1.5):
     import itertools
     import time
-    
-    spinner = itertools.cycle(['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'])
+
+    spinner = itertools.cycle(["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
     start = time.time()
     while time.time() - start < duration:
-        print(f"\r{next(spinner)} {text}", end='', flush=True)
+        print(f"\r{next(spinner)} {text}", end="", flush=True)
         time.sleep(0.08)
     print(f"\r✓ {text}")
 
@@ -92,6 +95,7 @@ def main():
             sys.exit(1)
     else:
         from rich.console import Console
+
         console = Console()
         with console.status("[cyan]正在启动像素地牢...", spinner="dots"):
             time.sleep(0.8)
