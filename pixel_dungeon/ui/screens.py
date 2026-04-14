@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """启动画面和覆盖层 UI"""
 
+import os
 import time
 
 from rich.panel import Panel
@@ -217,20 +218,24 @@ def create_modern_title(
 
     total_content_h = len(base_logo) + 2 + panel_height
 
-    def _decorate_spacer(width: int, style: str) -> Text:
+    def _decorate_spacer(style: str) -> Text:
         import random
 
+        try:
+            width = os.get_terminal_size().columns
+        except Exception:
+            width = 120
         chars = ["▓", "▒", "░", "█", "▀", "▄", "▌", "▐", "·", "*"]
         line = Text()
         for _ in range(width):
-            if random.random() < 0.08:
+            if random.random() < 0.06:
                 line.append(random.choice(chars), style=style)
             else:
                 line.append(" ")
         return line
 
-    top_spacer = _decorate_spacer(80, "dim cyan")
-    bottom_spacer = _decorate_spacer(80, "dim cyan")
+    top_spacer = _decorate_spacer("dim cyan")
+    bottom_spacer = _decorate_spacer("dim cyan")
 
     main_layout = Layout()
     main_layout.split_column(
@@ -279,15 +284,17 @@ def create_help_screen(frame: int = 0) -> Layout:
     return layout
 
 
-def create_about_screen(frame: int = 0) -> Layout:
+def create_about_screen(frame: int = 0, extra_msg: str = "") -> Layout:
     text = Text()
     text.append(_glitch_text("关于 像素地牢", frame, "bold cyan", 0.15))
     text.append("\n\n", style="")
     text.append("版本: v1.0\n", style="white")
-    text.append("作者: Pixel Dungeon Dev\n", style="white")
+    text.append("作者: 我和你\n", style="white")
     text.append("引擎: Python + Rich TUI\n", style="white")
+    if extra_msg:
+        text.append(f"\n{extra_msg}\n", style="bright_yellow")
     text.append("\n感谢游玩！\n", style="bright_yellow")
-    text.append("\n按任意键返回主菜单...", style="dim")
+    text.append("\nU - 检查更新  任意键 - 返回主菜单", style="dim")
 
     pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
     border = "bright_cyan" if frame % 24 < 12 else "cyan"
@@ -298,13 +305,13 @@ def create_about_screen(frame: int = 0) -> Layout:
         border_style=border,
         box=pulse_box,
         width=46,
-        height=12,
+        height=14 if extra_msg else 12,
     )
 
     layout = Layout()
     layout.split_column(
         Layout(Text(" "), ratio=1),
-        Layout(Align.center(panel, vertical="middle"), size=12),
+        Layout(Align.center(panel, vertical="middle"), size=(14 if extra_msg else 12)),
         Layout(Text(" "), ratio=1),
     )
     return layout
@@ -433,7 +440,14 @@ def show_title_screen() -> tuple:
                     live.update(create_about_screen(frame))
                     key = input_handler.get_key()
                     if key:
-                        showing_about = False
+                        if key.lower() == "u":
+                            from ..utils.ota import check_and_update
+
+                            ok, msg = check_and_update()
+                            live.update(create_about_screen(frame, extra_msg=msg))
+                            time.sleep(1.5)
+                        else:
+                            showing_about = False
                     time.sleep(0.05)
                     continue
 

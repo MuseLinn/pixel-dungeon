@@ -24,6 +24,9 @@ def parse_args():
     parser.add_argument(
         "--skip-title", action="store_true", help="跳过标题画面（直接开始）"
     )
+    parser.add_argument("--update", action="store_true", help="检查并更新到最新版本")
+    parser.add_argument("--uninstall", action="store_true", help="卸载游戏")
+    parser.add_argument("--version", action="store_true", help="显示版本号")
 
     return parser.parse_args()
 
@@ -32,6 +35,34 @@ def main():
     CONFIG.load_settings()
 
     args = parse_args()
+
+    if args.version:
+        from .utils.ota import get_version
+
+        print(f"Pixel Dungeon {get_version()}")
+        return
+
+    if args.uninstall:
+        import platform
+
+        if platform.system() == "Windows":
+            print("请在 PowerShell 中运行:")
+            print(
+                "  iwr -useb https://raw.githubusercontent.com/MuseLinn/pixel-dungeon/master/uninstall.ps1 | iex"
+            )
+        else:
+            print("请在终端中运行:")
+            print(
+                "  curl -sSL https://raw.githubusercontent.com/MuseLinn/pixel-dungeon/master/uninstall.sh | bash"
+            )
+        return
+
+    if args.update:
+        from .utils.ota import check_and_update
+
+        ok, msg = check_and_update()
+        print(msg)
+        return
 
     if args.fps:
         CONFIG.set_fps(args.fps)

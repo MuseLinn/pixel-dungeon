@@ -526,7 +526,7 @@ class Renderer:
         text = Text()
         text.append("商店\n\n", style="bold yellow")
 
-        items = game.shop.get_items()
+        items = game.shop.items
         for i, item in enumerate(items):
             num = i + 1
             sel_marker = "▶ " if i == game.shop.selected_index else "  "
