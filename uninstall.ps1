@@ -1,4 +1,4 @@
-﻿chcp 65001 > $null
+chcp 65001 > $null
 $ErrorActionPreference = "Stop"
 
 $InstallDir = if ($env:PIXEL_DUNGEON_HOME) { $env:PIXEL_DUNGEON_HOME } else { Join-Path $env:LOCALAPPDATA "pixel-dungeon" }

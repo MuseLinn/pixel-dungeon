@@ -1,4 +1,4 @@
-﻿chcp 65001 > $null
+chcp 65001 > $null
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = "Stop"
 
