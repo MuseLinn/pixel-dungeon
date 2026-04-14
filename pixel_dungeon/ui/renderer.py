@@ -343,10 +343,24 @@ class Renderer:
             return t
 
         table.add_row(
-            cell(" ▄██▄ ", "bright_green", "勇者"),
-            cell(" ▲▲▲▲ ", "bright_cyan", "法师"),
-            cell(" ▼▼▼▼ ", "bright_red", "刺客"),
-            cell(" ▄██▄ ", "bright_yellow", "圣骑"),
+            cell("▓████▓", "bright_green", "勇者"),
+            cell("▓▓▓▓▓▓", "bright_cyan", "法师"),
+            cell("▒▒▒▒▒▒", "bright_red", "刺客"),
+            cell("▓████▓", "bright_yellow", "圣骑"),
+            Text(),
+        )
+        table.add_row(
+            cell(" ▓▓▓▓ ", "green", "史莱姆"),
+            cell(" ▓▓▓▓ ", "yellow", "哥布林"),
+            cell(" ▓▓▓▓ ", "white", "骷髅"),
+            cell(" ▓▓▓▓ ", "red", "兽人"),
+            cell("▒▒  ▒▒", "magenta", "暗影"),
+        )
+        table.add_row(
+            cell(" ♥♥♥♥ ", "bright_red", "血瓶"),
+            cell(" ◆◆◆◆ ", "bright_yellow", "金币"),
+            cell(" ⌂⌂⌂⌂ ", "bright_cyan", "出口"),
+            cell("████░░", "bright_black", "墙壁"),
             Text(),
         )
         table.add_row(

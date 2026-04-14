@@ -16,17 +16,13 @@ from ..input_handler import CrossPlatformInputHandler
 def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layout:
     from ..assets import GAME_ASSETS, CHARACTERS
 
-    chars = ["█", "▓", "▒", "░"]
-    char = chars[frame % len(chars)]
-
     logo_lines = [
         "",
-        f"    {char * 4}  _           __   {char * 4}",
-        f"   / __ \\(_)  _____  / /  / __ \\__  ______  ____ ____  ____  ____",
-        f"  / /_/ / / |/_/ _ \\/ /  / / / / / / / __ \\/ __ `/ _ \\/ __ \\/ __ \\",
-        f" / ____/ />  </  __/ /  / /_/ / /_/ / / / / /_/ /  __/ /_/ / / / /",
-        f"/_/   /_/_/|_|\\___/_/  /_____/\\__,_/_/ /_/\\__, /\\___/\\____/_/ /_/",
-        f"                                         /____/",
+        "    ___ _         _   ___",
+        "   | _ (_)_ _____| | |   \\ _  _ _ _  __ _ ___ ___ _ _",
+        "   |  _/ \\ \\ / -_) | | |) | || | ' \\/ _` / -_) _ \\ ' \\",
+        "   |_| |_/_/_\\___|_| |___/ \\_,_|_||_\\__, \\___\\___/_||_|",
+        "                                      |___/",
         "",
         "                    P I X E L   D U N G E O N",
         "                         像素地牢 v1.0",
@@ -70,10 +66,10 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
     char_content.append("选择角色 ", style="bold")
     char_content.append("(按数字切换)\n\n", style="dim")
     chars_preview = [
-        ("1", "▄██▄", "bright_green", "勇者", "平衡型", "default"),
-        ("2", "▲▲▲▲", "bright_cyan", "法师", "高攻低防", "mage"),
-        ("3", "▼▼▼▼", "bright_red", "刺客", "暴击型", "rogue"),
-        ("4", "▄██▄", "bright_yellow", "圣骑", "坦克型", "paladin"),
+        ("1", "▓████▓", "bright_green", "勇者", "平衡型", "default"),
+        ("2", "▓▓▓▓▓▓", "bright_cyan", "法师", "高攻低防", "mage"),
+        ("3", "▒▒▒▒▒▒", "bright_red", "刺客", "暴击型", "rogue"),
+        ("4", "▓████▓", "bright_yellow", "圣骑", "坦克型", "paladin"),
     ]
     for num, icon, color, name, desc, char_key in chars_preview:
         is_selected = char_key == selected_char
