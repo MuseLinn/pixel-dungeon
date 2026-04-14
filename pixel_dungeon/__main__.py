@@ -10,7 +10,7 @@ from .ui.screens import show_title_screen
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="🎮 Pixel Dungeon - 像素地牢")
+    parser = argparse.ArgumentParser(description="Pixel Dungeon - 像素地牢")
     parser.add_argument("--fps", type=int, default=30, help="设置帧率 (10-60，默认 30)")
     parser.add_argument("--no-light", action="store_true", help="关闭光照效果")
     parser.add_argument("--no-particle", action="store_true", help="关闭粒子效果")
@@ -39,15 +39,36 @@ def main():
         CONFIG.particles = False
 
     selected_char = args.char
-    if not args.skip_title:
-        continue_game, selected_char = show_title_screen()
-        if not continue_game:
-            print("已退出游戏")
-            return
 
-    game = Game()
-    game.init_game(char_set=selected_char)
-    game.run()
+    if args.skip_title:
+        game = Game()
+        game.init_game(char_set=selected_char)
+        game.run()
+        return
+
+    while True:
+        action, selected_char = show_title_screen()
+
+        if action == "quit":
+            print("已退出游戏")
+            break
+
+        if action == "start":
+            game = Game()
+            game.init_game(char_set=selected_char)
+            game.run()
+            if not game.return_to_menu:
+                break
+
+        elif action == "continue":
+            game = Game()
+            game.init_game(char_set=selected_char)
+            if game.load_game(0):
+                game.run()
+            else:
+                game.run()
+            if not game.return_to_menu:
+                break
 
 
 if __name__ == "__main__":

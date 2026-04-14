@@ -12,8 +12,8 @@ class CONFIG:
     view_distance: int = 14  # 视野距离
     particle_limit: int = 30  # 粒子数量上限
 
-    tile_width: int = 6
-    tile_height: int = 3
+    tile_width: int = 1
+    tile_height: int = 1
 
     # 功能开关
     lighting: bool = True  # 光照效果开关

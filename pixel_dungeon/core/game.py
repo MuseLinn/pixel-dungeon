@@ -56,6 +56,7 @@ class Game:
         self.cmd_buffer = ""
         self.cmd_suggestions = []
         self.commands = None
+        self.return_to_menu = False
 
         # 消息日志
         self.messages: List[Tuple[str, str, str]] = []
@@ -530,8 +531,7 @@ class Game:
                         self.stats["play_time"] = int(time.time() - self.start_time)
 
                         # 处理输入
-                        if not self.paused or self.state == "shopping":
-                            self.handle_input(handler)
+                        self.handle_input(handler)
 
                         # 更新动画
                         if not self.paused and self.state == "playing":
@@ -539,6 +539,10 @@ class Game:
 
                         # 渲染
                         self.render(live)
+
+                        if self.return_to_menu:
+                            self.running = False
+                            break
                     except KeyboardInterrupt:
                         self.running = False
                         break
@@ -553,6 +557,10 @@ class Game:
 
         if self.cmd_mode:
             self.handle_command_input(key)
+            return
+
+        if self.paused:
+            self.handle_pause_input(key)
             return
 
         if self.state == "playing":
@@ -590,6 +598,13 @@ class Game:
             self.open_shop()
         elif key.lower() == "p":
             self.toggle_pause()
+        elif key.lower() == "s":
+            self.save_game()
+        elif key.lower() == "r":
+            self.restart_game()
+        elif key.lower() == "m":
+            self.return_to_menu = True
+            self.running = False
         elif key.lower() == "q":
             self.running = False
         elif key == "/" or key == "\x18":
@@ -656,20 +671,48 @@ class Game:
             self.close_shop()
 
     def handle_gameover_input(self, key: str) -> None:
-        """处理游戏结束输入"""
         if key.lower() == "r":
-            self.reset()
-            self.init_game(self.player.char_set if self.player else "default")
+            self.restart_game()
+        elif key.lower() == "m":
+            self.return_to_menu = True
+            self.running = False
         elif key.lower() == "q":
             self.running = False
 
+    def handle_pause_input(self, key: str) -> None:
+        if key.lower() == "p":
+            self.toggle_pause()
+        elif key.lower() == "s":
+            self.save_game()
+        elif key.lower() == "r":
+            self.toggle_pause()
+            self.restart_game()
+        elif key.lower() == "m":
+            self.return_to_menu = True
+            self.running = False
+        elif key.lower() == "q":
+            self.running = False
+        elif key == "\x1b":
+            self.toggle_pause()
+
+    def restart_game(self) -> None:
+        char = self.player.char_set if self.player else "default"
+        self.reset()
+        self.init_game(char)
+
     def render(self, live) -> None:
-        if self.cmd_mode:
+        if self.paused:
+            layout = self.renderer.render_with_pause()
+        elif self.cmd_mode:
             layout = self.renderer.render_with_command_overlay(
                 self, self.cmd_buffer, self.cmd_suggestions
             )
         elif self.state == "upgrading":
             layout = self.renderer.render_with_upgrade(self)
+        elif self.state == "shopping":
+            layout = self.renderer.render_with_shop(self)
+        elif self.state == "game_over":
+            layout = self.renderer.render_with_gameover(self)
         else:
             layout = self.renderer.render_game(self)
 

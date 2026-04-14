@@ -11,11 +11,13 @@ from rich import box
 from rich.live import Live
 
 from ..input_handler import CrossPlatformInputHandler
+from ..utils.save_load import SaveManager
 
 
-def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layout:
+def create_modern_title(
+    frame: int = 0, menu_index: int = 0, has_save: bool = False
+) -> Layout:
     import random
-    from ..assets import GAME_ASSETS, CHARACTERS
 
     base_logo = [
         "",
@@ -57,16 +59,6 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
         ("🛡", "bright_yellow", "商店系统", "购买道具强化角色"),
     ]
 
-    controls = [
-        ("WASD", "移动攻击"),
-        ("空格", "等待恢复"),
-        ("1-3", "选择升级"),
-        ("B", "打开商店"),
-        ("P", "暂停游戏"),
-        ("/", "命令模式"),
-        ("?", "帮助面板"),
-    ]
-
     left_content = Text()
     left_content.append("游戏特色\n", style="bold yellow underline")
     left_content.append("─" * 20 + "\n", style="dim")
@@ -75,32 +67,42 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
         left_content.append(f"{title}", style="bold")
         left_content.append(f"\n   {desc}\n", style="dim")
 
-    right_content = Text()
-    right_content.append("操作指南\n", style="bold cyan underline")
-    right_content.append("─" * 20 + "\n", style="dim")
-    for key, action in controls:
-        right_content.append(f"{key:>6}", style="bold white on dark_blue")
-        right_content.append(f"  {action}\n", style="white")
-
-    char_content = Text()
-    char_content.append("选择角色 ", style="bold")
-    char_content.append("(按数字切换)\n\n", style="dim")
-    chars_preview = [
-        ("1", "▓████▓", "bright_green", "勇者", "平衡型", "default"),
-        ("2", "▓▓▓▓▓▓", "bright_cyan", "法师", "高攻低防", "mage"),
-        ("3", "▒▒▒▒▒▒", "bright_red", "刺客", "暴击型", "rogue"),
-        ("4", "▓████▓", "bright_yellow", "圣骑", "坦克型", "paladin"),
+    menu_items = [
+        ("开始游戏", "start", True),
+        ("继续游戏", "continue", has_save),
+        ("游戏帮助", "help", True),
+        ("退出游戏", "quit", True),
     ]
-    for num, icon, color, name, desc, char_key in chars_preview:
-        is_selected = char_key == selected_char
-        prefix = ">>> " if is_selected else "    "
-        num_style = f"bold yellow on dark_green" if is_selected else "dim"
-        name_style = f"bold yellow" if is_selected else "bold"
-        desc_style = "white" if is_selected else "dim"
-        char_content.append(f"{prefix}[{num}] ", style=num_style)
-        char_content.append(f"{icon}", style=f"bold {color}")
-        char_content.append(f" {name:6}", style=name_style)
-        char_content.append(f" {desc}\n", style=desc_style)
+
+    menu_content = Text()
+    menu_content.append("主菜单\n", style="bold cyan underline")
+    menu_content.append("─" * 16 + "\n", style="dim")
+    for i, (label, action, enabled) in enumerate(menu_items):
+        is_selected = i == menu_index
+        prefix = ">>> " if is_selected else "     "
+        name_style = (
+            f"bold yellow on dark_green"
+            if is_selected
+            else ("dim" if not enabled else "bold")
+        )
+        desc_style = "white" if is_selected else ("dim" if not enabled else "dim")
+        menu_content.append(f"{prefix}", style=name_style)
+        menu_content.append(
+            f"{label}\n", style=name_style if is_selected else desc_style
+        )
+
+    controls = [
+        ("WASD/↑↓", "选择"),
+        ("Enter", "确认"),
+        ("Q", "退出"),
+    ]
+
+    controls_content = Text()
+    controls_content.append("操作\n", style="bold cyan underline")
+    controls_content.append("─" * 12 + "\n", style="dim")
+    for key, action in controls:
+        controls_content.append(f"{key:>8}", style="bold white on dark_blue")
+        controls_content.append(f"  {action}\n", style="white")
 
     logo_panel = Panel(
         Align.center(logo_text),
@@ -114,37 +116,31 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
         left_content,
         border_style="yellow",
         box=box.ROUNDED,
-        title="[yellow]✨ 特色[/]",
+        title="[yellow]✨ 特色[/yellow]",
         height=panel_height,
     )
-    right_panel = Panel(
-        right_content,
+    menu_panel = Panel(
+        menu_content,
+        border_style="green",
+        box=box.ROUNDED if menu_index != 0 else box.DOUBLE,
+        title="[green]🎮 菜单[/green]",
+        width=28,
+        height=panel_height,
+    )
+    controls_panel = Panel(
+        controls_content,
         border_style="cyan",
         box=box.ROUNDED,
-        title="[cyan]⌨ 操作[/]",
+        title="[cyan]⌨ 操作[/cyan]",
+        width=24,
         height=panel_height,
     )
-    char_panel = Panel(
-        char_content,
-        border_style="green",
-        box=box.ROUNDED,
-        title="[green]🎭 角色[/]",
-        width=30,
-        height=panel_height,
-    )
-
-    footer = Text()
-    footer.append("\n  按 ", style="dim")
-    footer.append("任意键", style="bold yellow")
-    footer.append(" 开始游戏  ·  ", style="dim")
-    footer.append("?", style="dim cyan")
-    footer.append(" 查看帮助", style="dim")
 
     info_layout = Layout()
     info_layout.split_row(
-        Layout(left_panel, ratio=2),
-        Layout(right_panel, ratio=2),
-        Layout(char_panel, ratio=1),
+        Layout(left_panel, ratio=3),
+        Layout(menu_panel, ratio=2),
+        Layout(controls_panel, ratio=2),
     )
 
     content_layout = Layout()
@@ -156,41 +152,124 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
     main_layout = Layout()
     main_layout.split_column(
         Layout(content_layout),
-        Layout(footer, size=2),
     )
 
     return main_layout
 
 
+def create_help_screen() -> Layout:
+    text = Text()
+    text.append("游戏帮助\n\n", style="bold yellow")
+    text.append("WASD / 方向键  移动和攻击\n", style="white")
+    text.append("空格           等待一回合，恢复生命\n", style="white")
+    text.append("B              打开商店\n", style="white")
+    text.append("P              暂停/继续游戏\n", style="white")
+    text.append("S              保存游戏\n", style="white")
+    text.append("R              重新开始\n", style="white")
+    text.append("M              返回主菜单\n", style="white")
+    text.append("/ 或 Ctrl+X    命令模式\n", style="white")
+    text.append("?              显示帮助\n", style="white")
+    text.append("Q              退出游戏\n", style="white")
+    text.append("\n按任意键返回主菜单...", style="dim")
+
+    panel = Panel(
+        Align.center(text, vertical="middle"),
+        title="[bold yellow]帮助[/bold yellow]",
+        border_style="yellow",
+        box=box.ROUNDED,
+        width=50,
+        height=16,
+    )
+
+    layout = Layout()
+    layout.split_column(
+        Layout(size=1),
+        Layout(Align.center(panel, vertical="middle"), size=16),
+        Layout(size=1),
+    )
+    return layout
+
+
+def show_help(live_or_input) -> None:
+    if hasattr(live_or_input, "update"):
+        live_or_input.update(create_help_screen())
+        time.sleep(0.1)
+    else:
+        with Live(screen=True, refresh_per_second=10) as live:
+            live.update(create_help_screen())
+            while True:
+                key = live_or_input.get_key()
+                if key:
+                    break
+                time.sleep(0.05)
+
+
 def show_title_screen() -> tuple:
     input_handler = CrossPlatformInputHandler()
     input_handler.start()
-    should_exit = False
-    selected_char = "default"
+
+    save_manager = SaveManager()
+    has_save = save_manager.exists(0)
+
+    menu_items = [
+        ("开始游戏", "start", True),
+        ("继续游戏", "continue", has_save),
+        ("游戏帮助", "help", True),
+        ("退出游戏", "quit", True),
+    ]
+    menu_index = 0
+
     char_map = {"1": "default", "2": "mage", "3": "rogue", "4": "paladin"}
+    selected_char = "default"
 
     try:
         with Live(screen=True, refresh_per_second=10) as live:
             frame = 0
+            showing_help = False
+
             while True:
                 frame += 1
-                layout = create_modern_title(frame, selected_char)
+
+                if showing_help:
+                    live.update(create_help_screen())
+                    key = input_handler.get_key()
+                    if key:
+                        showing_help = False
+                    time.sleep(0.05)
+                    continue
+
+                layout = create_modern_title(frame, menu_index, has_save)
                 live.update(layout)
 
                 key = input_handler.get_key()
                 if key:
                     if key in char_map:
                         selected_char = char_map[key]
+                    elif key == "UP" or key == "w" or key == "W":
+                        new_index = menu_index - 1
+                        while new_index >= 0:
+                            if menu_items[new_index][2]:
+                                menu_index = new_index
+                                break
+                            new_index -= 1
+                    elif key == "DOWN" or key == "s" or key == "S":
+                        new_index = menu_index + 1
+                        while new_index < len(menu_items):
+                            if menu_items[new_index][2]:
+                                menu_index = new_index
+                                break
+                            new_index += 1
+                    elif key == "\r" or key == "\n":
+                        action = menu_items[menu_index][1]
+                        if action == "help":
+                            showing_help = True
+                        else:
+                            return (action, selected_char)
                     elif key == "\x03" or key.lower() == "q":
-                        should_exit = True
-                        break
-                    else:
-                        break
+                        return ("quit", selected_char)
 
                 time.sleep(0.05)
     except KeyboardInterrupt:
-        should_exit = True
+        return ("quit", selected_char)
     finally:
         input_handler.stop()
-
-    return (not should_exit, selected_char)

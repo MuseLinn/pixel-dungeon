@@ -13,16 +13,8 @@ class TileType(Enum):
 
 GAME_ASSETS = {
     "player_default": {
-        "sprite": [
-            "▓████▓",
-            "█░░░░█",
-            "██  ██",
-        ],
-        "alt_sprite": [
-            "▓████▓",
-            "█▓░░▓█",
-            "██  ██",
-        ],
+        "sprite": ["♛"],
+        "alt_sprite": ["♕"],
         "name": "勇者",
         "style": "bright_green",
         "style_alt": "green",
@@ -34,16 +26,8 @@ GAME_ASSETS = {
         "regen": 0,
     },
     "player_mage": {
-        "sprite": [
-            "▓▓▓▓▓▓",
-            "█░░░░█",
-            "█    █",
-        ],
-        "alt_sprite": [
-            "▓  ▓  ▓",
-            "█░░░░█",
-            "█ ▓▓ █",
-        ],
+        "sprite": ["⚚"],
+        "alt_sprite": ["⚕"],
         "name": "法师",
         "style": "bright_cyan",
         "style_alt": "cyan",
@@ -55,16 +39,8 @@ GAME_ASSETS = {
         "regen": 1,
     },
     "player_rogue": {
-        "sprite": [
-            "▒▒▒▒▒▒",
-            "█░░░░█",
-            "▓    ▓",
-        ],
-        "alt_sprite": [
-            "▒▒▒▒▒▒",
-            "█▓▓▓▓█",
-            "▓    ▓",
-        ],
+        "sprite": ["⚔"],
+        "alt_sprite": ["†"],
         "name": "刺客",
         "style": "bright_red",
         "style_alt": "red",
@@ -76,16 +52,8 @@ GAME_ASSETS = {
         "regen": 0,
     },
     "player_paladin": {
-        "sprite": [
-            "▓████▓",
-            "█╋╋╋╋█",
-            "██████",
-        ],
-        "alt_sprite": [
-            "▓████▓",
-            "█╋╋╋╋█",
-            "██  ██",
-        ],
+        "sprite": ["⚕"],
+        "alt_sprite": ["✚"],
         "name": "圣骑",
         "style": "bright_yellow",
         "style_alt": "yellow",
@@ -97,151 +65,71 @@ GAME_ASSETS = {
         "regen": 1,
     },
     "enemy_slime": {
-        "sprite": [
-            " ▓▓▓▓ ",
-            "█◉◉◉ █",
-            "██████",
-        ],
-        "alt_sprite": [
-            "▓▓▓▓▓▓",
-            "█◉◉◉ █",
-            "██████",
-        ],
+        "sprite": ["◉"],
+        "alt_sprite": ["◎"],
         "name": "史莱姆",
         "style": "green",
         "style_alt": "bright_green",
     },
     "enemy_goblin": {
-        "sprite": [
-            " ▓▓▓▓ ",
-            "█◉  ◉█",
-            " ████ ",
-        ],
-        "alt_sprite": [
-            " ░░░░ ",
-            "█◉  ◉█",
-            " ▓▓▓▓ ",
-        ],
+        "sprite": ["◓"],
+        "alt_sprite": ["◒"],
         "name": "哥布林",
         "style": "yellow",
         "style_alt": "bright_yellow",
     },
     "enemy_skeleton": {
-        "sprite": [
-            " ▓▓▓▓ ",
-            "█▓  ▓█",
-            " █▓▓█ ",
-        ],
-        "alt_sprite": [
-            " ▒▒▒▒ ",
-            "█▓  ▓█",
-            " █░░█ ",
-        ],
+        "sprite": ["☠"],
+        "alt_sprite": ["✝"],
         "name": "骷髅",
         "style": "white",
         "style_alt": "bright_white",
     },
     "enemy_orc": {
-        "sprite": [
-            " ▓▓▓▓ ",
-            "█▓▓▓▓█",
-            "█░██░█",
-        ],
-        "alt_sprite": [
-            " ▒▒▒▒ ",
-            "█▓░▓░█",
-            "█░██░█",
-        ],
+        "sprite": ["◈"],
+        "alt_sprite": ["◆"],
         "name": "兽人",
         "style": "red",
         "style_alt": "bright_red",
     },
     "enemy_shadow": {
-        "sprite": [
-            "▒▒  ▒▒",
-            "█▓▓▓▓█",
-            " ████ ",
-        ],
-        "alt_sprite": [
-            "░░  ░░",
-            "█▓▓▓▓█",
-            " ▓▓▓▓ ",
-        ],
+        "sprite": ["◐"],
+        "alt_sprite": ["◑"],
         "name": "暗影",
         "style": "magenta",
         "style_alt": "bright_magenta",
     },
     "wall": {
-        "sprite": [
-            "████░░",
-            "██░░██",
-            "░░████",
-        ],
-        "alt_sprite": [
-            "░░████",
-            "██░░██",
-            "████░░",
-        ],
+        "sprite": ["▓"],
+        "alt_sprite": ["▒"],
         "name": "墙壁",
         "style": "bright_black",
         "style_alt": "bright_black",
     },
     "floor": {
-        "sprite": [
-            "  ·  ·",
-            " ·  · ",
-            "  ·  ·",
-        ],
-        "alt_sprite": [
-            " ·  · ",
-            "  ·  ·",
-            " ·  · ",
-        ],
+        "sprite": ["·"],
+        "alt_sprite": ["‧"],
         "name": "地面",
         "style": "dim white",
         "style_alt": "dim white",
     },
     "potion": {
-        "sprite": [
-            " ♥♥♥♥ ",
-            " ▓▓▓▓ ",
-            " ░░░░ ",
-        ],
-        "alt_sprite": [
-            " ♥♥♥♥ ",
-            " ░░░░ ",
-            "      ",
-        ],
+        "sprite": ["♥"],
+        "alt_sprite": ["♡"],
         "name": "生命药水",
         "style": "bright_red",
         "style_alt": "red",
     },
     "gold": {
-        "sprite": [
-            " ◆◆◆◆ ",
-            "◆◆◆◆◆◆",
-            " ▓▓▓▓ ",
-        ],
-        "alt_sprite": [
-            " ◆◆◆◆ ",
-            "▓▓▓▓▓▓",
-            " ░░░░ ",
-        ],
+        "sprite": ["◆"],
+        "alt_sprite": ["◇"],
         "name": "金币",
         "style": "bright_yellow",
         "style_alt": "yellow",
     },
     "exit": {
-        "sprite": [
-            " ⌂⌂⌂⌂ ",
-            "▓▓▓▓▓▓",
-            " ░░░░ ",
-        ],
-        "alt_sprite": [
-            " ⌂⌂⌂⌂ ",
-            "██████",
-            " ▒▒▒▒ ",
-        ],
+        "sprite": ["⌂"],
+        "alt_sprite": ["△"],
         "name": "出口",
         "style": "bright_cyan",
         "style_alt": "cyan",
