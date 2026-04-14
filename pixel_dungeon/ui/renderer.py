@@ -302,9 +302,10 @@ class Renderer:
             height=6,
         )
 
-    def create_log_panel(self, game) -> Panel:
+    def create_log_panel(self, game) -> Tuple[Panel, int]:
         log_text = Text()
         visible_count = 6
+        actual_count = min(visible_count, len(game.messages))
 
         for msg, style, msg_type in game.messages[-visible_count:]:
             if msg_type == "combat":
@@ -322,47 +323,61 @@ class Renderer:
 
             log_text.append(f"{prefix}{msg}\n", style=style)
 
-        return Panel(
+        height = max(actual_count, 1) + 2
+        panel = Panel(
             log_text,
             title="[bold yellow]日志[/bold yellow]",
             border_style="yellow",
             box=box.ROUNDED,
-            height=visible_count + 2,
+            height=height,
         )
+        return panel, height
 
     def create_legend_panel(self) -> Panel:
-        text = Text()
-        text.append(" ▄██▄ ", style="bright_green")
-        text.append("勇者 ")
-        text.append(" ▲▲▲▲ ", style="bright_cyan")
-        text.append("法师 ")
-        text.append(" ▼▼▼▼ ", style="bright_red")
-        text.append("刺客 ")
-        text.append(" ▄▓▓▄ ", style="bright_yellow")
-        text.append("圣骑\n")
-        text.append(" ▄▄▄▄ ", style="green")
-        text.append("史莱姆 ")
-        text.append("▀▄▄▄▄▀", style="yellow")
-        text.append("哥布林 ")
-        text.append(" ▄▄▄▄ ", style="white")
-        text.append("骷髅\n")
-        text.append(" ▀▀▀▀ ", style="red")
-        text.append("兽人 ")
-        text.append(" ▓░▓░ ", style="magenta")
-        text.append("暗影 ")
-        text.append(" ♥♥♥♥ ", style="bright_red")
-        text.append("血瓶 ")
-        text.append(" ◆◆◆◆ ", style="bright_yellow")
-        text.append(" ⌂⌂⌂⌂ ", style="bright_cyan")
-        text.append("出口 ")
-        text.append("▓▓░░▓▓", style="bright_black")
-        text.append("墙壁\n")
-        text.append("WASD/方向键移动  B商店  P暂停  /命令", style="dim")
+        table = Table(show_header=False, box=None, padding=(0, 1), expand=False)
+        for _ in range(5):
+            table.add_column()
+
+        def cell(sprite: str, style: str, name: str) -> Text:
+            t = Text()
+            t.append(sprite, style=style)
+            t.append(f" {name}")
+            return t
+
+        table.add_row(
+            cell(" ▄██▄ ", "bright_green", "勇者"),
+            cell(" ▲▲▲▲ ", "bright_cyan", "法师"),
+            cell(" ▼▼▼▼ ", "bright_red", "刺客"),
+            cell(" ▄▓▓▄ ", "bright_yellow", "圣骑"),
+            Text(),
+        )
+        table.add_row(
+            cell(" ▄▄▄▄ ", "green", "史莱姆"),
+            cell("▀▄▄▄▄▀", "yellow", "哥布林"),
+            cell(" ▄▄▄▄ ", "white", "骷髅"),
+            cell(" ▀▀▀▀ ", "red", "兽人"),
+            cell(" ▓░▓░ ", "magenta", "暗影"),
+        )
+        table.add_row(
+            cell(" ♥♥♥♥ ", "bright_red", "血瓶"),
+            cell(" ◆◆◆◆ ", "bright_yellow", "金币"),
+            cell(" ⌂⌂⌂⌂ ", "bright_cyan", "出口"),
+            cell("▓▓░░▓▓", "bright_black", "墙壁"),
+            Text(),
+        )
+        table.add_row(
+            Text("WASD/方向键移动  B商店  P暂停  ?帮助  /命令", style="dim"),
+            Text(),
+            Text(),
+            Text(),
+            Text(),
+        )
 
         return Panel(
-            text,
+            table,
             border_style="dim",
             box=box.ROUNDED,
+            padding=(0, 0),
             height=6,
         )
 
@@ -457,12 +472,13 @@ class Renderer:
         layout = Layout()
 
         map_panel = self.create_map_panel(game)
+        log_panel, log_h = self.create_log_panel(game)
 
         right_layout = Layout()
         right_layout.split_column(
             Layout(self.create_stats_panel(game), size=6),
             Layout(self.create_minimap_panel(game), size=12),
-            Layout(self.create_log_panel(game), size=8),
+            Layout(log_panel, size=log_h),
         )
 
         main = Layout()
