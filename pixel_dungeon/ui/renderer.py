@@ -42,7 +42,7 @@ class Renderer:
     def get_viewport(self, game) -> Tuple[int, int, int, int]:
         tile_w = CONFIG.tile_width
         tile_h = CONFIG.tile_height
-        bottom_h = 5
+        bottom_h = 6
 
         main_h = self.console.height - bottom_h
         map_avail_h = main_h - 2
@@ -79,10 +79,12 @@ class Renderer:
             style = self.get_light_style(style, light)
             return [row for row in sprite], style
         else:
-            void = ["░"]
+            void = ["░" * CONFIG.tile_width] * CONFIG.tile_height
             return void, "dim black"
 
     def create_map_panel(self, game) -> Panel:
+        tile_w = CONFIG.tile_width
+        tile_h = CONFIG.tile_height
         x1, y1, x2, y2 = self.get_viewport(game)
 
         particle_map = {}
@@ -101,7 +103,7 @@ class Renderer:
         px, py = game.player.x, game.player.y
 
         for ly in range(y1, y2):
-            row_text = Text()
+            row_texts = [Text() for _ in range(tile_h)]
 
             for lx in range(x1, x2):
                 in_bounds = 0 <= lx < CONFIG.map_width and 0 <= ly < CONFIG.map_height
@@ -116,26 +118,37 @@ class Renderer:
                     light = 1.0 if not CONFIG.lighting and in_bounds else 0
 
                 sprite_rows, style = self._get_tile_sprite(game, lx, ly, light)
-                char = sprite_rows[0]
+                sprite_rows = list(sprite_rows)
 
                 if light > 0 and in_bounds:
                     p = particle_map.get((lx, ly))
                     if p:
-                        char = p.char
+                        mid_row = tile_h // 2
+                        mid_col = tile_w // 2
+                        row = list(sprite_rows[mid_row])
+                        if mid_col < len(row):
+                            row[mid_col] = p.char
+                        sprite_rows[mid_row] = "".join(row)
                         style = self.get_light_style(p.style, light)
 
                     t = text_map.get((lx, ly))
                     if t:
-                        char = t.text[0] if t.text else char
+                        text = t.text[:tile_w]
+                        row = list(sprite_rows[0])
+                        for i, ch in enumerate(text):
+                            if i < len(row):
+                                row[i] = ch
+                        sprite_rows[0] = "".join(row)
                         style = self.get_light_style(t.get_alpha_style(), light)
 
-                row_text.append(char, style=style)
+                for i in range(tile_h):
+                    row_texts[i].append(sprite_rows[i], style=style)
 
-            lines.append(row_text)
+            lines.extend(row_texts)
 
-        main_h = self.console.height - 5
+        main_h = self.console.height - 6
         panel_content_h = main_h - 2
-        content_h = len(lines)
+        content_h = (y2 - y1) * tile_h
         pad_top = (panel_content_h - content_h) // 2
         pad_bottom = panel_content_h - content_h - pad_top
 
@@ -151,7 +164,7 @@ class Renderer:
             title=f"[bold cyan]地牢 - 第 {game.floor} 层[/bold cyan]",
             border_style="cyan",
             box=box.ROUNDED,
-            padding=(0, 1),
+            padding=(0, 0),
             height=main_h,
         )
 
@@ -181,6 +194,7 @@ class Renderer:
                 has_exit = False
                 has_potion = False
                 has_gold = False
+                dominant = TileType.EMPTY
 
                 for ty in range(ty1, ty2):
                     for tx in range(tx1, tx2):
@@ -195,6 +209,8 @@ class Renderer:
                                 has_potion = True
                             elif tile == TileType.GOLD:
                                 has_gold = True
+                            elif tile == TileType.EMPTY:
+                                dominant = TileType.EMPTY
 
                 cx = tx1 + scale_x / 2
                 cy = ty1 + scale_y / 2
@@ -366,9 +382,6 @@ class Renderer:
         text.append("空格           等待一回合\n", style="white")
         text.append("B              打开商店\n", style="white")
         text.append("P              暂停/继续\n", style="white")
-        text.append("S              保存游戏\n", style="white")
-        text.append("R              重新开始\n", style="white")
-        text.append("M              返回主菜单\n", style="white")
         text.append("/ 或 Ctrl+X    命令模式\n", style="white")
         text.append("?              显示帮助\n", style="white")
         text.append("Q              退出游戏\n", style="white")
@@ -378,7 +391,7 @@ class Renderer:
             title="[bold yellow]帮助[/bold yellow]",
             border_style="yellow",
             box=box.ROUNDED,
-            height=14,
+            height=12,
         )
 
     def create_upgrade_panel(self, game) -> Panel:
@@ -388,19 +401,18 @@ class Renderer:
         for i, upgrade in enumerate(game.upgrades[:3]):
             num = i + 1
             text.append(f"[{num}] ", style="bold yellow")
-            text.append(f"{upgrade.name}\n", style=f"bold {upgrade.get_style()}")
+            text.append(f"{upgrade.name}\n", style="bold white")
             text.append(f"    {upgrade.description}\n", style="dim")
             text.append("\n")
 
-        text.append("1-3 选择升级    Esc 取消", style="dim")
+        text.append("1-3 选择升级", style="dim")
 
         return Panel(
-            Align.center(text, vertical="middle"),
+            text,
             title="[bold yellow]升级[/bold yellow]",
             border_style="yellow",
-            box=box.DOUBLE,
-            width=50,
-            height=14,
+            box=box.ROUNDED,
+            height=20,
         )
 
     def create_shop_panel(self, game) -> Panel:
@@ -414,18 +426,17 @@ class Renderer:
             text.append(f"{sel_marker}[{num}] ", style="bold yellow")
             text.append(f"{item.name} ", style="bold white")
             text.append(f"({item.price}G)\n", style="yellow")
-            text.append(f"    {item.desc}\n", style="dim")
+            text.append(f"    {item.description}\n", style="dim")
 
         text.append("\n")
         text.append("W/S - 切换  Enter - 购买  Esc - 关闭", style="dim")
 
         return Panel(
-            Align.center(text, vertical="middle"),
+            text,
             title="[bold yellow]商店[/bold yellow]",
             border_style="yellow",
-            box=box.DOUBLE,
-            width=50,
-            height=16,
+            box=box.ROUNDED,
+            height=20,
         )
 
     def create_gameover_panel(self, game) -> Panel:
@@ -452,7 +463,7 @@ class Renderer:
             height=13,
         )
 
-    def create_pause_panel(self) -> Panel:
+    def create_pause_panel(self, frame: int = 0) -> Panel:
         text = Text()
         text.append("\n游戏暂停\n\n", style="bold yellow")
         text.append("P - 继续游戏\n", style="white")
@@ -461,13 +472,39 @@ class Renderer:
         text.append("M - 返回主菜单\n", style="white")
         text.append("Q - 退出游戏\n", style="white")
 
+        pulse_box = box.DOUBLE if frame % 4 < 2 else box.ROUNDED
+        border = "bright_yellow" if frame % 6 < 3 else "yellow"
+
         return Panel(
             Align.center(text, vertical="middle"),
             title="[bold yellow]暂停[/bold yellow]",
-            border_style="yellow",
-            box=box.DOUBLE,
+            border_style=border,
+            box=pulse_box,
             width=30,
             height=10,
+        )
+
+    def create_transition_panel(self, game, frame: int = 0) -> Panel:
+        import random
+
+        base = game.transition_text if hasattr(game, "transition_text") else "传送中..."
+        glitch_chars = ["▓", "▒", "░", "█", "▀", "▄", "▌", "▐"]
+        glitch_prob = 0.25 if frame % 8 < 4 else 0.05
+
+        line = Text()
+        for ch in base:
+            if random.random() < glitch_prob:
+                line.append(random.choice(glitch_chars), style="dim cyan")
+            else:
+                style = "bright_cyan" if frame % 6 < 3 else "cyan"
+                line.append(ch, style=style)
+
+        return Panel(
+            Align.center(line, vertical="middle"),
+            border_style="cyan",
+            box=box.DOUBLE if frame % 4 < 2 else box.ROUNDED,
+            width=max(len(base) + 6, 20),
+            height=5,
         )
 
     def render_game(self, game) -> Layout:
@@ -475,9 +512,9 @@ class Renderer:
 
         map_panel = self.create_map_panel(game)
 
+        legend_h = 6
         stats_h = 6
         minimap_h = 12
-        legend_h = 5
         log_h = max(self.console.height - legend_h - stats_h - minimap_h, 4)
         log_panel = self.create_log_panel(game, log_h)
 
@@ -494,22 +531,18 @@ class Renderer:
             Layout(right_layout, ratio=1),
         )
 
-        bottom = Layout(self.create_legend_panel(), size=legend_h)
+        bottom = Layout(self.create_legend_panel(), size=6)
 
         layout.split_column(
             Layout(main, ratio=1),
-            Layout(bottom, size=legend_h),
+            Layout(bottom, size=6),
         )
 
         return layout
 
     def _modal_layout(self, panel) -> Layout:
         total_h = self.console.height
-        panel_h = getattr(panel, "renderable", None)
-        if hasattr(panel, "height") and panel.height:
-            h = panel.height
-        else:
-            h = 14
+        h = panel.height or 14
         spacer = max(1, (total_h - h) // 2)
 
         layout = Layout()
@@ -526,15 +559,32 @@ class Renderer:
     def render_with_shop(self, game) -> Layout:
         return self._modal_layout(self.create_shop_panel(game))
 
-    def render_with_pause(self) -> Layout:
-        return self._modal_layout(self.create_pause_panel())
+    def render_with_pause(self, frame: int = 0) -> Layout:
+        return self._modal_layout(self.create_pause_panel(frame))
 
     def render_with_gameover(self, game) -> Layout:
         return self._modal_layout(self.create_gameover_panel(game))
 
+    def render_with_transition(self, game, frame: int = 0) -> Layout:
+        layout = self.render_game(game)
+        overlay = self._modal_layout(self.create_transition_panel(game, frame))
+
+        trans_layout = Layout()
+        trans_layout.split_column(
+            Layout(size=1),
+            Layout(
+                overlay,
+                size=overlay.children[1].size if hasattr(overlay, "children") else 5,
+            ),
+            Layout(size=1),
+        )
+        return trans_layout
+
     def render_with_command_overlay(
         self, game, cmd_buffer: str = "", suggestions: list = None
     ) -> Layout:
+        from rich.align import Align
+
         layout = self.render_game(game)
 
         text = Text()

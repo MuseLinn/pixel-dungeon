@@ -28,8 +28,8 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(CONFIG.fps, 30)
         self.assertEqual(CONFIG.map_width, 80)
         self.assertEqual(CONFIG.map_height, 40)
-        self.assertEqual(CONFIG.tile_width, 1)
-        self.assertEqual(CONFIG.tile_height, 1)
+        self.assertEqual(CONFIG.tile_width, 6)
+        self.assertEqual(CONFIG.tile_height, 3)
         self.assertTrue(CONFIG.lighting)
         self.assertTrue(CONFIG.particles)
 

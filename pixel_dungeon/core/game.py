@@ -57,6 +57,9 @@ class Game:
         self.cmd_suggestions = []
         self.commands = None
         self.return_to_menu = False
+        self.frame_count = 0
+        self.transition_timer = 0
+        self.transition_text = ""
 
         # 消息日志
         self.messages: List[Tuple[str, str, str]] = []
@@ -79,6 +82,8 @@ class Game:
         self.player = Player.create(char_set)
         self.init_map()
         self.commands = CommandHandler(self)
+        self.transition_timer = 0
+        self.transition_text = ""
         self.add_msg("欢迎来到像素地牢！", "green", "system")
 
     def init_map(self) -> None:
@@ -417,6 +422,8 @@ class Game:
         """进入下一层"""
         self.floor += 1
         self.add_msg(f"进入第 {self.floor} 层...", "cyan", "system")
+        self.transition_text = f" 进入第 {self.floor} 层 "
+        self.transition_timer = 20
         self.init_map()
         self.particles.clear()
 
@@ -526,6 +533,10 @@ class Game:
                             time.sleep(frame_time - elapsed)
 
                         last_time = time.time()
+                        self.frame_count += 1
+
+                        if self.transition_timer > 0:
+                            self.transition_timer -= 1
 
                         # 更新游戏时间
                         self.stats["play_time"] = int(time.time() - self.start_time)
@@ -701,8 +712,10 @@ class Game:
         self.init_game(char)
 
     def render(self, live) -> None:
-        if self.paused:
-            layout = self.renderer.render_with_pause()
+        if self.transition_timer > 0:
+            layout = self.renderer.render_with_transition(self, self.frame_count)
+        elif self.paused:
+            layout = self.renderer.render_with_pause(self.frame_count)
         elif self.cmd_mode:
             layout = self.renderer.render_with_command_overlay(
                 self, self.cmd_buffer, self.cmd_suggestions
