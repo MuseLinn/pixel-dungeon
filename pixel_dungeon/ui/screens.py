@@ -29,40 +29,52 @@ def _glitch_text(base: str, frame: int, style: str, glitch_prob: float = 0.12) -
     return result
 
 
-def create_menu_transition_layout(frame: int, console, direction: str = "in") -> Layout:
+def create_matrix_transition_layout(frame: int, console) -> Layout:
     import random
 
-    progress = frame / 12.0
     total_w = console.width
     total_h = console.height
+    matrix_chars = "0123456789ABCDEFｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏｦｧｨｩｪｫｬｭｮｯ"
 
-    if direction == "in":
-        ratio = min(progress, 1.0)
-    else:
-        ratio = max(1.0 - progress, 0.0)
+    total_frames = 22
+    progress = min(frame / total_frames, 1.0)
+    active_cols = max(2, int(total_w * progress * 1.2))
 
-    w = max(min(int(total_w * ratio), total_w), 8)
-    h = max(min(int(total_h * ratio), total_h), 4)
+    occupied = [set() for _ in range(total_w)]
+    columns = [[] for _ in range(total_w)]
+    for _ in range(active_cols):
+        cx = random.randint(0, total_w - 1)
+        head_y = random.randint(0, int(total_h * progress) + 2)
+        trail_len = random.randint(3, 8)
+        for dy in range(trail_len + 1):
+            y = head_y - dy
+            if 0 <= y < total_h and y not in occupied[cx]:
+                occupied[cx].add(y)
+                columns[cx].append((y, dy))
 
-    glitch_chars = ["▓", "▒", "░", "█", "▀", "▄"]
-    block = "\n".join(
-        "".join(random.choice(glitch_chars) for _ in range(w)) for _ in range(h)
-    )
+    lines = []
+    for y in range(total_h):
+        line = Text()
+        for x in range(total_w):
+            cell = None
+            for dy in sorted(columns[x]):
+                if dy[0] == y:
+                    cell = dy[1]
+                    break
+            if cell is None:
+                line.append(" ")
+            elif cell == 0:
+                line.append(random.choice(matrix_chars), style="bright_white on green")
+            elif cell == 1:
+                line.append(random.choice(matrix_chars), style="bright_green")
+            elif cell <= 3:
+                line.append(random.choice(matrix_chars), style="green")
+            else:
+                line.append(random.choice(matrix_chars), style="dim green")
+        lines.append(line)
 
-    panel = Panel(
-        Text(block, style="dim cyan"),
-        border_style="cyan",
-        box=box.DOUBLE,
-        width=w,
-        height=h,
-    )
-
-    layout = Layout()
-    layout.split_column(
-        Layout(ratio=1),
-        Layout(Align.center(panel, vertical="middle"), size=h),
-        Layout(ratio=1),
-    )
+    full_text = Text("\n").join(lines)
+    layout = Layout(full_text)
     return layout
 
 
@@ -205,9 +217,9 @@ def create_modern_title(
 
     main_layout = Layout()
     main_layout.split_column(
-        Layout(ratio=1),
+        Layout(Text(""), ratio=1),
         Layout(content_layout, size=total_content_h),
-        Layout(ratio=1),
+        Layout(Text(""), ratio=1),
     )
 
     return main_layout
@@ -239,9 +251,9 @@ def create_help_screen() -> Layout:
 
     layout = Layout()
     layout.split_column(
-        Layout(ratio=1),
+        Layout(Text(""), ratio=1),
         Layout(Align.center(panel, vertical="middle"), size=16),
-        Layout(ratio=1),
+        Layout(Text(""), ratio=1),
     )
     return layout
 
@@ -305,9 +317,9 @@ def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
 
     layout = Layout()
     layout.split_column(
-        Layout(ratio=1),
+        Layout(Text(""), ratio=1),
         Layout(Align.center(panel, vertical="middle"), size=15),
-        Layout(ratio=1),
+        Layout(Text(""), ratio=1),
     )
     return layout
 
@@ -430,66 +442,6 @@ def show_title_screen() -> tuple:
                     time.sleep(0.05)
                     continue
 
-                if showing_settings:
-                    live.update(create_settings_screen(frame, settings_index))
-                    key = input_handler.get_key()
-                    if key:
-                        if key == "UP" or key == "w" or key == "W":
-                            settings_index = max(0, settings_index - 1)
-                        elif key == "DOWN" or key == "s" or key == "S":
-                            settings_index = min(3, settings_index + 1)
-                        elif key == "LEFT" or key == "a" or key == "A":
-                            if settings_index == 0:
-                                cur = (
-                                    fps_options.index(CONFIG.fps)
-                                    if CONFIG.fps in fps_options
-                                    else 1
-                                )
-                                new_i = max(0, cur - 1)
-                                CONFIG.set_fps(fps_options[new_i])
-                            elif settings_index == 1:
-                                CONFIG.lighting = not CONFIG.lighting
-                            elif settings_index == 2:
-                                CONFIG.particles = not CONFIG.particles
-                            CONFIG.save_settings()
-                        elif key == "RIGHT" or key == "d" or key == "D":
-                            if settings_index == 0:
-                                cur = (
-                                    fps_options.index(CONFIG.fps)
-                                    if CONFIG.fps in fps_options
-                                    else 1
-                                )
-                                new_i = min(len(fps_options) - 1, cur + 1)
-                                CONFIG.set_fps(fps_options[new_i])
-                            elif settings_index == 1:
-                                CONFIG.lighting = not CONFIG.lighting
-                            elif settings_index == 2:
-                                CONFIG.particles = not CONFIG.particles
-                            CONFIG.save_settings()
-                        elif key == "\r" or key == "\n":
-                            if settings_index == 0:
-                                cur = (
-                                    fps_options.index(CONFIG.fps)
-                                    if CONFIG.fps in fps_options
-                                    else 1
-                                )
-                                CONFIG.set_fps(
-                                    fps_options[(cur + 1) % len(fps_options)]
-                                )
-                                CONFIG.save_settings()
-                            elif settings_index == 1:
-                                CONFIG.lighting = not CONFIG.lighting
-                                CONFIG.save_settings()
-                            elif settings_index == 2:
-                                CONFIG.particles = not CONFIG.particles
-                                CONFIG.save_settings()
-                            elif settings_index == 3:
-                                showing_settings = False
-                        elif key == "\x1b" or key.lower() == "q":
-                            showing_settings = False
-                    time.sleep(0.05)
-                    continue
-
                 layout = create_modern_title(frame, menu_index, has_save)
                 live.update(layout)
 
@@ -519,12 +471,11 @@ def show_title_screen() -> tuple:
                             showing_settings = True
                             settings_index = 0
                         elif action in ("start", "continue"):
-                            for f in range(15):
+                            for f in range(24):
                                 live.update(
-                                    create_menu_transition_layout(
+                                    create_matrix_transition_layout(
                                         frame=f,
                                         console=live.console,
-                                        direction="in",
                                     )
                                 )
                                 time.sleep(0.04)
