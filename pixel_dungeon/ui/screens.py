@@ -263,6 +263,7 @@ def show_help(live_or_input) -> None:
 def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
     fps_options = [15, 30, 60]
     fps_index = fps_options.index(CONFIG.fps) if CONFIG.fps in fps_options else 1
+    diff_labels = {"easy": "简单", "normal": "普通", "hard": "困难"}
 
     items = [
         (
@@ -276,6 +277,7 @@ def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
         ),
         ("光照效果", "[开]" if CONFIG.lighting else "[关]"),
         ("粒子效果", "[开]" if CONFIG.particles else "[关]"),
+        ("难度", f"[{diff_labels.get(CONFIG.difficulty, CONFIG.difficulty)}]"),
         ("返回主菜单", ""),
     ]
 
@@ -298,13 +300,13 @@ def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
         border_style=border,
         box=pulse_box,
         width=42,
-        height=14,
+        height=15,
     )
 
     layout = Layout()
     layout.split_column(
         Layout(ratio=1),
-        Layout(Align.center(panel, vertical="middle"), size=14),
+        Layout(Align.center(panel, vertical="middle"), size=15),
         Layout(ratio=1),
     )
     return layout
@@ -330,6 +332,18 @@ def show_title_screen() -> tuple:
     selected_char = "default"
 
     fps_options = [15, 30, 60]
+    diff_options = ["easy", "normal", "hard"]
+    diff_labels = {"easy": "简单", "normal": "普通", "hard": "困难"}
+
+    def _cycle_diff(delta: int) -> None:
+        cur = (
+            diff_options.index(CONFIG.difficulty)
+            if CONFIG.difficulty in diff_options
+            else 1
+        )
+        new_i = (cur + delta) % len(diff_options)
+        CONFIG.difficulty = diff_options[new_i]
+        CONFIG.save_settings()
 
     try:
         with Live(screen=True, refresh_per_second=10) as live:
@@ -346,6 +360,73 @@ def show_title_screen() -> tuple:
                     key = input_handler.get_key()
                     if key:
                         showing_help = False
+                    time.sleep(0.05)
+                    continue
+
+                if showing_settings:
+                    live.update(create_settings_screen(frame, settings_index))
+                    key = input_handler.get_key()
+                    if key:
+                        if key == "UP" or key == "w" or key == "W":
+                            settings_index = max(0, settings_index - 1)
+                        elif key == "DOWN" or key == "s" or key == "S":
+                            settings_index = min(4, settings_index + 1)
+                        elif key == "LEFT" or key == "a" or key == "A":
+                            if settings_index == 0:
+                                cur = (
+                                    fps_options.index(CONFIG.fps)
+                                    if CONFIG.fps in fps_options
+                                    else 1
+                                )
+                                new_i = max(0, cur - 1)
+                                CONFIG.set_fps(fps_options[new_i])
+                            elif settings_index == 1:
+                                CONFIG.lighting = not CONFIG.lighting
+                            elif settings_index == 2:
+                                CONFIG.particles = not CONFIG.particles
+                            elif settings_index == 3:
+                                _cycle_diff(-1)
+                            CONFIG.save_settings()
+                        elif key == "RIGHT" or key == "d" or key == "D":
+                            if settings_index == 0:
+                                cur = (
+                                    fps_options.index(CONFIG.fps)
+                                    if CONFIG.fps in fps_options
+                                    else 1
+                                )
+                                new_i = min(len(fps_options) - 1, cur + 1)
+                                CONFIG.set_fps(fps_options[new_i])
+                            elif settings_index == 1:
+                                CONFIG.lighting = not CONFIG.lighting
+                            elif settings_index == 2:
+                                CONFIG.particles = not CONFIG.particles
+                            elif settings_index == 3:
+                                _cycle_diff(1)
+                            CONFIG.save_settings()
+                        elif key == "\r" or key == "\n":
+                            if settings_index == 0:
+                                cur = (
+                                    fps_options.index(CONFIG.fps)
+                                    if CONFIG.fps in fps_options
+                                    else 1
+                                )
+                                CONFIG.set_fps(
+                                    fps_options[(cur + 1) % len(fps_options)]
+                                )
+                                CONFIG.save_settings()
+                            elif settings_index == 1:
+                                CONFIG.lighting = not CONFIG.lighting
+                                CONFIG.save_settings()
+                            elif settings_index == 2:
+                                CONFIG.particles = not CONFIG.particles
+                                CONFIG.save_settings()
+                            elif settings_index == 3:
+                                _cycle_diff(1)
+                                CONFIG.save_settings()
+                            elif settings_index == 4:
+                                showing_settings = False
+                        elif key == "\x1b" or key.lower() == "q":
+                            showing_settings = False
                     time.sleep(0.05)
                     continue
 

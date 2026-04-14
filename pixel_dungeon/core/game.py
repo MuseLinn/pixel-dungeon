@@ -91,6 +91,42 @@ class Game:
         self.menu_transition_type = ""
         self.add_msg("欢迎来到像素地牢！", "green", "system")
 
+    def _bfs_path_exists(self, sx: int, sy: int, ex: int, ey: int) -> bool:
+        from collections import deque
+
+        if self.map[sy][sx] == TileType.WALL or self.map[ey][ex] == TileType.WALL:
+            return False
+        visited = set()
+        q = deque([(sx, sy)])
+        visited.add((sx, sy))
+        while q:
+            x, y = q.popleft()
+            if (x, y) == (ex, ey):
+                return True
+            for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+                nx, ny = x + dx, y + dy
+                if (
+                    0 <= nx < CONFIG.map_width
+                    and 0 <= ny < CONFIG.map_height
+                    and (nx, ny) not in visited
+                    and self.map[ny][nx] != TileType.WALL
+                ):
+                    visited.add((nx, ny))
+                    q.append((nx, ny))
+        return False
+
+    def _random_empty_pos(self, exclude=None) -> Tuple[int, int]:
+        for _ in range(500):
+            x = random.randint(1, CONFIG.map_width - 2)
+            y = random.randint(1, CONFIG.map_height - 2)
+            if self.map[y][x] == TileType.EMPTY and (x, y) != exclude:
+                return (x, y)
+        for y in range(1, CONFIG.map_height - 1):
+            for x in range(1, CONFIG.map_width - 1):
+                if self.map[y][x] == TileType.EMPTY and (x, y) != exclude:
+                    return (x, y)
+        return (1, 1)
+
     def init_map(self) -> None:
         if self.map_seed is None:
             self.map_seed = random.randint(0, 2**31 - 1)
@@ -114,19 +150,35 @@ class Game:
         for _ in range(CONFIG.map_width * CONFIG.map_height // 10):
             x = random.randint(2, CONFIG.map_width - 3)
             y = random.randint(2, CONFIG.map_height - 3)
-            if (x, y) != (1, 1) and (x, y) != (
-                CONFIG.map_width - 2,
-                CONFIG.map_height - 2,
-            ):
-                self.map[y][x] = TileType.WALL
+            self.map[y][x] = TileType.WALL
+
+        start_x, start_y = self._random_empty_pos()
+        exit_x, exit_y = self._random_empty_pos(exclude=(start_x, start_y))
+
+        max_attempts = 20
+        for attempt in range(max_attempts):
+            if self._bfs_path_exists(start_x, start_y, exit_x, exit_y):
+                break
+            mid_x = (start_x + exit_x) // 2
+            mid_y = (start_y + exit_y) // 2
+            for wx in range(max(1, mid_x - 2), min(CONFIG.map_width - 1, mid_x + 3)):
+                for wy in range(
+                    max(1, mid_y - 2), min(CONFIG.map_height - 1, mid_y + 3)
+                ):
+                    if (wx, wy) != (start_x, start_y) and (wx, wy) != (exit_x, exit_y):
+                        self.map[wy][wx] = TileType.EMPTY
+        else:
+            for y in range(1, CONFIG.map_height - 1):
+                for x in range(1, CONFIG.map_width - 1):
+                    self.map[y][x] = TileType.EMPTY
 
         if self.player:
-            self.player.x = 1
-            self.player.y = 1
+            self.player.x = start_x
+            self.player.y = start_y
 
         self.spawn_enemies()
         self.spawn_items()
-        self.map[CONFIG.map_height - 2][CONFIG.map_width - 2] = TileType.EXIT
+        self.map[exit_y][exit_x] = TileType.EXIT
 
         random.seed()
         self.update_explored()
@@ -144,19 +196,27 @@ class Game:
                     self.explored_map[y][x] = True
 
     def spawn_enemies(self) -> None:
-        """生成敌人"""
         self.enemies.clear()
 
-        # 根据层数确定可用敌人类型
         available = ENEMY_TYPES[: min(len(ENEMY_TYPES), 1 + self.floor // 3)]
 
-        num_enemies = random.randint(3, 5) + self.floor // 2
+        if CONFIG.difficulty == "easy":
+            num_enemies = random.randint(2, 3) + self.floor // 3
+        elif CONFIG.difficulty == "hard":
+            num_enemies = random.randint(5, 7) + self.floor // 2 + 1
+        else:
+            num_enemies = random.randint(3, 5) + self.floor // 2
+
+        scale = CONFIG.enemy_scale_per_floor
+        if CONFIG.difficulty == "easy":
+            scale = max(0.08, scale * 0.7)
+        elif CONFIG.difficulty == "hard":
+            scale = scale * 1.4
 
         for _ in range(num_enemies):
             enemy_type, name, hp, atk, exp, gold = random.choice(available)
 
-            # 找到空位置
-            for _ in range(100):  # 尝试100次
+            for _ in range(100):
                 x = random.randint(1, CONFIG.map_width - 2)
                 y = random.randint(1, CONFIG.map_height - 2)
 
@@ -164,9 +224,9 @@ class Game:
                     self.map[y][x] == TileType.EMPTY
                     and not self.get_enemy_at(x, y)
                     and abs(x - self.player.x) + abs(y - self.player.y) > 5
-                ):  # 不要太靠近玩家
+                ):
                     enemy = Enemy.create(
-                        enemy_type, name, x, y, hp, atk, exp, gold, self.floor
+                        enemy_type, name, x, y, hp, atk, exp, gold, self.floor, scale
                     )
                     self.enemies.append(enemy)
                     break

@@ -17,6 +17,7 @@ class SaveData:
     timestamp: str = ""
     floor: int = 1
     map_seed: int = 0
+    difficulty: str = "normal"
     player_data: Dict = field(default_factory=dict)
     game_stats: Dict = field(default_factory=dict)
     achievements: List[str] = field(default_factory=list)
@@ -54,12 +55,15 @@ class SaveManager:
             return False
 
         try:
+            from ..config import CONFIG
+
             save_data = SaveData(
                 timestamp=datetime.now().isoformat(),
                 floor=game.floor,
                 map_seed=game.map_seed
                 if hasattr(game, "map_seed") and game.map_seed is not None
                 else 0,
+                difficulty=CONFIG.difficulty,
                 player_data=self._serialize_player(game.player),
                 game_stats=game.stats,
                 achievements=list(game.achievements.unlocked)
@@ -92,6 +96,11 @@ class SaveManager:
             # 恢复游戏状态
             game.floor = save_data.floor
             game.map_seed = save_data.map_seed
+            from ..config import CONFIG
+
+            diff = save_data.difficulty
+            if diff in ("easy", "normal", "hard"):
+                CONFIG.difficulty = diff
             self._deserialize_player(game.player, save_data.player_data)
             game.stats = save_data.game_stats
 

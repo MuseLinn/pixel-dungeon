@@ -65,9 +65,11 @@ class Enemy:
         base_exp: int,
         base_gold: int,
         floor: int,
+        scale_override: float = None,
     ) -> "Enemy":
-        """创建敌人，根据层数缩放属性"""
-        scale = 1 + (floor - 1) * 0.15
+        scale = 1 + (floor - 1) * (
+            scale_override if scale_override is not None else 0.15
+        )
         return cls(
             enemy_type=enemy_type,
             name=name,

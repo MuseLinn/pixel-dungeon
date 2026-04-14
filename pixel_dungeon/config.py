@@ -27,6 +27,7 @@ class CONFIG:
 
     # 游戏设置
     char_set: str = "default"  # 当前角色
+    difficulty: str = "normal"
 
     # 游戏平衡性
     enemy_scale_per_floor: float = 0.15  # 每层敌人强度增长
@@ -86,6 +87,9 @@ class CONFIG:
                 cls.lighting = data.get("lighting", cls.lighting)
                 cls.particles = data.get("particles", cls.particles)
                 cls.animations = data.get("animations", cls.animations)
+                diff = data.get("difficulty", cls.difficulty)
+                if diff in ("easy", "normal", "hard"):
+                    cls.difficulty = diff
             except Exception:
                 pass
 
@@ -99,6 +103,7 @@ class CONFIG:
                     "lighting": cls.lighting,
                     "particles": cls.particles,
                     "animations": cls.animations,
+                    "difficulty": cls.difficulty,
                 },
                 f,
                 ensure_ascii=False,
