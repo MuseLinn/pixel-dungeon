@@ -423,7 +423,7 @@ class Game:
         self.floor += 1
         self.add_msg(f"进入第 {self.floor} 层...", "cyan", "system")
         self.transition_text = f" 进入第 {self.floor} 层 "
-        self.transition_timer = 20
+        self.transition_timer = 25
         self.init_map()
         self.particles.clear()
 

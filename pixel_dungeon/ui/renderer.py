@@ -120,6 +120,40 @@ class Renderer:
                 sprite_rows, style = self._get_tile_sprite(game, lx, ly, light)
                 sprite_rows = list(sprite_rows)
 
+                if hasattr(game, "transition_timer") and game.transition_timer > 0:
+                    import random
+
+                    progress = 1.0 - (game.transition_timer / 25.0)
+                    vp_w = x2 - x1
+                    vp_h = y2 - y1
+                    max_dist = math.sqrt((vp_w / 2) ** 2 + (vp_h / 2) ** 2) + 2
+                    td = math.sqrt((lx - px) ** 2 + (ly - py) ** 2)
+                    if td > progress * max_dist:
+                        gch = random.choice(
+                            [
+                                "▓",
+                                "▒",
+                                "░",
+                                "█",
+                                "▀",
+                                "▄",
+                                "▌",
+                                "▐",
+                                "▖",
+                                "▗",
+                                "▘",
+                                "▙",
+                                "▚",
+                                "▛",
+                                "▜",
+                                "▝",
+                                "▞",
+                                "▟",
+                            ]
+                        )
+                        sprite_rows = [gch * tile_w for _ in range(tile_h)]
+                        style = random.choice(["dim cyan", "dim blue", "dim magenta"])
+
                 if light > 0 and in_bounds:
                     p = particle_map.get((lx, ly))
                     if p:
@@ -463,9 +497,27 @@ class Renderer:
             height=13,
         )
 
+    def _glitch_text(
+        self, base: str, frame: int, style: str, glitch_prob: float = 0.12
+    ) -> Text:
+        import random
+
+        glitch_chars = ["▓", "▒", "░", "█", "▀", "▄", "▌", "▐"]
+        result = Text()
+        active = glitch_prob if frame % 8 < 4 else 0.02
+        for ch in base:
+            if ch == " " or random.random() > active:
+                result.append(ch, style=style)
+            else:
+                result.append(
+                    random.choice(glitch_chars), style=f"dim {style.split()[-1]}"
+                )
+        return result
+
     def create_pause_panel(self, frame: int = 0) -> Panel:
         text = Text()
-        text.append("\n游戏暂停\n\n", style="bold yellow")
+        text.append(self._glitch_text("游戏暂停", frame, "bold yellow"))
+        text.append("\n\n", style="")
         text.append("P - 继续游戏\n", style="white")
         text.append("S - 保存游戏\n", style="white")
         text.append("R - 重新开始\n", style="white")
@@ -566,19 +618,7 @@ class Renderer:
         return self._modal_layout(self.create_gameover_panel(game))
 
     def render_with_transition(self, game, frame: int = 0) -> Layout:
-        layout = self.render_game(game)
-        overlay = self._modal_layout(self.create_transition_panel(game, frame))
-
-        trans_layout = Layout()
-        trans_layout.split_column(
-            Layout(size=1),
-            Layout(
-                overlay,
-                size=overlay.children[1].size if hasattr(overlay, "children") else 5,
-            ),
-            Layout(size=1),
-        )
-        return trans_layout
+        return self.render_game(game)
 
     def render_with_command_overlay(
         self, game, cmd_buffer: str = "", suggestions: list = None
