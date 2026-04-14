@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """全局配置模块"""
 
+import json
+from pathlib import Path
+
+SETTINGS_PATH = Path.home() / ".pixel_dungeon" / "settings.json"
+
 
 class CONFIG:
     """游戏全局配置"""
@@ -59,7 +64,6 @@ class CONFIG:
 
     @classmethod
     def get_config_dict(cls) -> dict:
-        """获取配置字典"""
         return {
             "fps": cls.fps,
             "map_width": cls.map_width,
@@ -71,3 +75,32 @@ class CONFIG:
             "animations": cls.animations,
             "char_set": cls.char_set,
         }
+
+    @classmethod
+    def load_settings(cls) -> None:
+        if SETTINGS_PATH.exists():
+            try:
+                with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                cls.fps = data.get("fps", cls.fps)
+                cls.lighting = data.get("lighting", cls.lighting)
+                cls.particles = data.get("particles", cls.particles)
+                cls.animations = data.get("animations", cls.animations)
+            except Exception:
+                pass
+
+    @classmethod
+    def save_settings(cls) -> None:
+        SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "fps": cls.fps,
+                    "lighting": cls.lighting,
+                    "particles": cls.particles,
+                    "animations": cls.animations,
+                },
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )

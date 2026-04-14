@@ -12,6 +12,21 @@ from rich.live import Live
 
 from ..input_handler import CrossPlatformInputHandler
 from ..utils.save_load import SaveManager
+from ..config import CONFIG
+
+
+def _glitch_text(base: str, frame: int, style: str, glitch_prob: float = 0.12) -> Text:
+    import random
+
+    glitch_chars = ["▓", "▒", "░", "█", "▀", "▄", "▌", "▐"]
+    result = Text()
+    active = glitch_prob if frame % 8 < 4 else 0.02
+    for ch in base:
+        if ch == " " or random.random() > active:
+            result.append(ch, style=style)
+        else:
+            result.append(random.choice(glitch_chars), style=f"dim {style.split()[-1]}")
+    return result
 
 
 def create_menu_transition_layout(frame: int, console, direction: str = "in") -> Layout:
@@ -204,9 +219,13 @@ def create_modern_title(
         Layout(info_layout, size=panel_height),
     )
 
+    total_content_h = len(base_logo) + 2 + panel_height
+
     main_layout = Layout()
     main_layout.split_column(
-        Layout(content_layout),
+        Layout(ratio=1),
+        Layout(content_layout, size=total_content_h),
+        Layout(ratio=1),
     )
 
     return main_layout
@@ -259,6 +278,56 @@ def show_help(live_or_input) -> None:
                 time.sleep(0.05)
 
 
+def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
+    fps_options = [15, 30, 60]
+    fps_index = fps_options.index(CONFIG.fps) if CONFIG.fps in fps_options else 1
+
+    items = [
+        (
+            "帧率",
+            " ".join(
+                [
+                    f"[{v}]" if i == fps_index else f" {v} "
+                    for i, v in enumerate(fps_options)
+                ]
+            ),
+        ),
+        ("光照效果", "[开]" if CONFIG.lighting else "[关]"),
+        ("粒子效果", "[开]" if CONFIG.particles else "[关]"),
+        ("返回主菜单", ""),
+    ]
+
+    text = Text()
+    text.append(_glitch_text("游戏设置", frame, "bold yellow", 0.15))
+    text.append("\n\n", style="")
+    for i, (label, value) in enumerate(items):
+        is_selected = i == selected_index
+        prefix = ">>> " if is_selected else "     "
+        line_style = "bold yellow on dark_green" if is_selected else "white"
+        text.append(f"{prefix}{label}  ", style=line_style)
+        text.append(f"{value}\n", style=line_style)
+
+    pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
+    border = "bright_yellow" if frame % 24 < 12 else "yellow"
+
+    panel = Panel(
+        Align.center(text, vertical="middle"),
+        title="[bold yellow]设置[/bold yellow]",
+        border_style=border,
+        box=pulse_box,
+        width=42,
+        height=14,
+    )
+
+    layout = Layout()
+    layout.split_column(
+        Layout(ratio=1),
+        Layout(Align.center(panel, vertical="middle"), size=14),
+        Layout(ratio=1),
+    )
+    return layout
+
+
 def show_title_screen() -> tuple:
     input_handler = CrossPlatformInputHandler()
     input_handler.start()
@@ -269,6 +338,7 @@ def show_title_screen() -> tuple:
     menu_items = [
         ("开始游戏", "start", True),
         ("继续游戏", "continue", has_save),
+        ("游戏设置", "settings", True),
         ("游戏帮助", "help", True),
         ("退出游戏", "quit", True),
     ]
@@ -277,10 +347,14 @@ def show_title_screen() -> tuple:
     char_map = {"1": "default", "2": "mage", "3": "rogue", "4": "paladin"}
     selected_char = "default"
 
+    fps_options = [15, 30, 60]
+
     try:
         with Live(screen=True, refresh_per_second=10) as live:
             frame = 0
             showing_help = False
+            showing_settings = False
+            settings_index = 0
 
             while True:
                 frame += 1
@@ -290,6 +364,66 @@ def show_title_screen() -> tuple:
                     key = input_handler.get_key()
                     if key:
                         showing_help = False
+                    time.sleep(0.05)
+                    continue
+
+                if showing_settings:
+                    live.update(create_settings_screen(frame, settings_index))
+                    key = input_handler.get_key()
+                    if key:
+                        if key == "UP" or key == "w" or key == "W":
+                            settings_index = max(0, settings_index - 1)
+                        elif key == "DOWN" or key == "s" or key == "S":
+                            settings_index = min(3, settings_index + 1)
+                        elif key == "LEFT" or key == "a" or key == "A":
+                            if settings_index == 0:
+                                cur = (
+                                    fps_options.index(CONFIG.fps)
+                                    if CONFIG.fps in fps_options
+                                    else 1
+                                )
+                                new_i = max(0, cur - 1)
+                                CONFIG.set_fps(fps_options[new_i])
+                            elif settings_index == 1:
+                                CONFIG.lighting = not CONFIG.lighting
+                            elif settings_index == 2:
+                                CONFIG.particles = not CONFIG.particles
+                            CONFIG.save_settings()
+                        elif key == "RIGHT" or key == "d" or key == "D":
+                            if settings_index == 0:
+                                cur = (
+                                    fps_options.index(CONFIG.fps)
+                                    if CONFIG.fps in fps_options
+                                    else 1
+                                )
+                                new_i = min(len(fps_options) - 1, cur + 1)
+                                CONFIG.set_fps(fps_options[new_i])
+                            elif settings_index == 1:
+                                CONFIG.lighting = not CONFIG.lighting
+                            elif settings_index == 2:
+                                CONFIG.particles = not CONFIG.particles
+                            CONFIG.save_settings()
+                        elif key == "\r" or key == "\n":
+                            if settings_index == 0:
+                                cur = (
+                                    fps_options.index(CONFIG.fps)
+                                    if CONFIG.fps in fps_options
+                                    else 1
+                                )
+                                CONFIG.set_fps(
+                                    fps_options[(cur + 1) % len(fps_options)]
+                                )
+                                CONFIG.save_settings()
+                            elif settings_index == 1:
+                                CONFIG.lighting = not CONFIG.lighting
+                                CONFIG.save_settings()
+                            elif settings_index == 2:
+                                CONFIG.particles = not CONFIG.particles
+                                CONFIG.save_settings()
+                            elif settings_index == 3:
+                                showing_settings = False
+                        elif key == "\x1b" or key.lower() == "q":
+                            showing_settings = False
                     time.sleep(0.05)
                     continue
 
@@ -318,6 +452,9 @@ def show_title_screen() -> tuple:
                         action = menu_items[menu_index][1]
                         if action == "help":
                             showing_help = True
+                        elif action == "settings":
+                            showing_settings = True
+                            settings_index = 0
                         elif action in ("start", "continue"):
                             for f in range(15):
                                 live.update(

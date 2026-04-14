@@ -29,6 +29,8 @@ def parse_args():
 
 
 def main():
+    CONFIG.load_settings()
+
     args = parse_args()
 
     if args.fps:
