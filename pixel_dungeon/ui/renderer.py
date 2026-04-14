@@ -472,26 +472,37 @@ class Renderer:
         )
 
     def create_upgrade_panel(self, game, frame: int = 0) -> Panel:
-        text = Text()
-        text.append(self._glitch_text("升级选择!", frame, "bold yellow", 0.15))
-        text.append("\n\n", style="")
-
         rarity_colors = {
             "common": "white",
             "rare": "bright_cyan",
             "epic": "bright_magenta",
             "legendary": "bright_yellow",
         }
+        rarity_panel_styles = {
+            "common": ("white", "bright_black"),
+            "rare": ("bright_cyan", "cyan"),
+            "epic": ("bright_magenta", "magenta"),
+            "legendary": ("bright_yellow", "yellow"),
+        }
+
+        selected_upgrade = game.upgrades[game.sel_upgrade] if game.upgrades else None
+        sel_rarity = selected_upgrade.rarity if selected_upgrade else "common"
+        panel_main, panel_dim = rarity_panel_styles.get(sel_rarity, ("white", "dim"))
+
+        text = Text()
+        text.append(self._glitch_text("升级选择!", frame, f"bold {panel_main}", 0.15))
+        text.append("\n\n", style="")
 
         for i, upgrade in enumerate(game.upgrades[:3]):
             num = i + 1
             color = rarity_colors.get(upgrade.rarity, "white")
-            sel_prefix = ">>> " if i == game.sel_upgrade else "    "
+            is_selected = i == game.sel_upgrade
+            sel_prefix = ">>> " if is_selected else "    "
             text.append(
                 f"{sel_prefix}",
-                style="bold yellow on dark_green" if i == game.sel_upgrade else "",
+                style=f"bold {panel_main} on dark_green" if is_selected else "",
             )
-            text.append(f"[{num}] ", style="bold yellow")
+            text.append(f"[{num}] ", style=f"bold {panel_main}")
             text.append(self._glitch_text(upgrade.name, frame, f"bold {color}", 0.08))
             text.append("\n", style="")
             text.append(f"    {upgrade.description}\n", style="dim")
@@ -500,11 +511,11 @@ class Renderer:
         text.append("1-3 选择升级", style="dim")
 
         pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
-        border = "bright_yellow" if frame % 24 < 12 else "yellow"
+        border = panel_main if frame % 24 < 12 else panel_dim
 
         return Panel(
             Align.center(text, vertical="middle"),
-            title="[bold yellow]升级[/bold yellow]",
+            title=f"[bold {panel_main}]升级[/bold {panel_main}]",
             border_style=border,
             box=pulse_box,
             width=46,
