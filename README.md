@@ -10,61 +10,74 @@
 - **粒子特效** - 战斗、拾取、升级时的粒子效果
 - **浮动文字** - 伤害数字和提示信息
 - **呼吸动画** - 角色和敌人的动态效果
+- **Glitch 故障艺术** - 主菜单、升级、暂停、过渡画面的数字雨与脉冲边框
 
 ### 🎮 游戏机制
 - **4种可选角色** - 勇者、法师、刺客、圣骑，各有不同初始属性
-- **Roguelike 升级** - 每次升级三选一能力，12种升级选项
-- **商店系统** - 使用金币购买道具强化角色
+- **Roguelike 升级** - 每次升级三选一能力，18种升级选项
+- **商店系统** - 使用金币购买道具强化角色，包含一次性消耗品
 - **无限地牢** - 层层递进，敌人越来越强
 - **暂停功能** - 随时暂停游戏
+- **存档/读档** - 按 `S` 保存，主菜单可继续游戏
+- **难度设置** - 简单 / 普通 / 困难，影响敌人数值与密度
 
 ## 🚀 快速开始
 
 ### 环境要求
 - **Python** 3.7+
 - **Rich** 库 (`pip3 install rich`)
-- **终端** 支持 100x35 以上分辨率
+- **终端** 支持 100×35 以上分辨率
 
-### 运行方式
+### 安装方式（推荐）
 
+#### Linux / macOS
 ```bash
-# 方式1：使用现代化TUI启动器（推荐）
+curl -sSL https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/install.sh | bash
+```
+
+#### Windows (PowerShell)
+```powershell
+iwr -useb https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/install.ps1 | iex
+```
+
+安装完成后可直接运行：
+```bash
+pixel-dungeon
+```
+
+### 卸载
+```bash
+pixel-dungeon --uninstall
+```
+或
+```bash
+curl -sSL https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/uninstall.sh | bash
+```
+
+### 直接运行（无需安装）
+```bash
+# 方式1：使用 Bash 启动器
 ./start_dungeon.sh
 
 # 方式2：直接运行游戏
 python3 pixel_dungeon.py
 
-# 方式3：使用Python启动器
+# 方式3：使用 Python 启动器
 python3 launcher.py
 ```
 
-### 启动流程
-
-1. 运行 `./start_dungeon.sh`
-2. 启动器会显示 **TUI环境检查界面**
-3. 检查通过后按 **Enter** 键启动游戏
-4. 如果缺少 Rich 库，按 **I** 键自动安装
-
 ### 命令行参数
 ```bash
-./start_dungeon.sh [选项]
+pixel-dungeon [选项]
 
   --fps N              设置帧率 (10-60，默认 30)
   --no-light           关闭光照效果
   --no-particle        关闭粒子效果
   --char [角色]        选择角色: default/mage/rogue/paladin
   --skip-title         跳过标题画面
-```
-
-### 命令行参数
-```bash
-python3 pixel_dungeon.py [选项]
-
-  --fps N              设置帧率 (10-60，默认 30)
-  --no-light           关闭光照效果
-  --no-particle        关闭粒子效果
-  --char [角色]        选择角色: default/mage/rogue/paladin
-  --skip-title         跳过标题画面
+  --update             检查并更新到最新版本
+  --uninstall          卸载游戏
+  --version            显示版本号
 ```
 
 ## 🎮 操作指南
@@ -76,9 +89,12 @@ python3 pixel_dungeon.py [选项]
 | `1/2/3` | 升级时选择能力 |
 | `B` | 打开商店 |
 | `P` | 暂停/继续游戏 |
+| `S` | 保存当前进度 |
+| `R` | 重新开始本局 |
+| `M` | 返回主菜单 |
 | `/` | 命令模式 |
-| `?` | 显示/隐藏帮助面板 |
-| `Q` | 退出游戏 |
+| `?` | 显示帮助面板 |
+| `Q` | 退出并自动保存 |
 
 ### 命令模式
 按 `/` 进入命令模式，可用命令：
@@ -118,6 +134,12 @@ python3 pixel_dungeon.py [选项]
 | `☠` | 骷髅 | 攻击力高 |
 | `Ω` | 兽人 | 生命值高 |
 | `✦` | 暗影 | 后期强敌 |
+| `◈` | 蝙蝠 | 速度快 |
+| `◉` | 巨鼠 | 成群出现 |
+| `◐` | 女巫 | 魔法伤害 |
+| `▓` | 魔像 | 极高生命 |
+
+敌人可能带有前缀：暴躁的、懒惰的、巨大的、迅捷的、精英，影响其属性。
 
 ## 🏪 商店系统
 
@@ -130,30 +152,42 @@ python3 pixel_dungeon.py [选项]
 | 体质卷轴 | ♥ | 50G | 最大生命 +20 |
 | 铁皮药剂 | 🛡 | 40G | 防御 +1 |
 | 狂暴卷轴 | ⚡ | 60G | 暴击率 +10% |
+| 生命精华 | ✦ | 100G | 最大生命 +50 |
+| 炸弹 | 💣 | 45G | 下次攻击 +50 爆炸伤害 |
+| 传送卷轴 | 📜 | 80G | 立即传送到出口附近（一次性） |
+| 无敌药水 | 🛡 | 120G | 下一场战斗免疫一次伤害 |
+| 幸运金币 | 🍀 | 60G | 金币获取 +20%，持续 5 层 |
 
 ## 🔮 升级系统
 
-每次升级时从三个选项中选择一项：
+每次升级时从三个选项中选择一项，稀有度越高越难出现：
 
 ### ⚪ 普通
 - **生命强化** - 最大生命 +20
 - **攻击强化** - 攻击力 +3
 - **生命恢复** - 每回合恢复 +2
 - **铁皮** - 防御 +2
+- **敏捷训练** - 闪避率 +10%
+- **毒素武器** - 攻击附加 3 点/回合毒伤
 
 ### 🔵 稀有
 - **生命偷取** - 攻击恢复 10% 伤害
 - **暴击** - 暴击率 +15%
 - **狂战士** - 攻击+5，防御-1
 - **泰坦** - 生命+50，攻击-2
+- **连击** - 25% 概率攻击 2 次
+- **荆棘护甲** - 反弹 15% 受到伤害
 
 ### 🟣 史诗
 - **吸血鬼** - 吸血 +25%
 - **狂怒** - 暴击率 +30%
+- **灵魂汲取** - 击杀敌人恢复 10% 最大生命
+- **雷霆一击** - 暴击伤害变为 3 倍
 
 ### 🟡 传说
 - **不朽** - 生命+100，恢复+5
 - **毁灭者** - 攻击+15，暴击+20%
+- **时空行者** - 闪避+30%
 
 ## ⚔️ 战斗系统
 
@@ -166,12 +200,16 @@ python3 pixel_dungeon.py [选项]
 - 永远不会完全无敌
 
 ### 暴击系统
-- 暴击时造成 **2倍伤害**
+- 暴击时造成 **2倍伤害**（可通过升级提升倍率）
 - 暴击率通过升级提升
 
 ### 生命偷取
 - 攻击时按百分比恢复生命
 - 与暴击配合效果极佳
+
+### 闪避
+- 敌人攻击时有几率完全闪避
+- 通过「敏捷训练」等升级提升
 
 ## 💡 游戏技巧
 
@@ -187,7 +225,7 @@ python3 pixel_dungeon.py [选项]
 ### 游戏卡顿
 降低帧率或关闭特效：
 ```bash
-python3 pixel_dungeon.py --fps 15 --no-light --no-particle
+pixel-dungeon --fps 15 --no-light --no-particle
 ```
 
 或在游戏中使用命令：
@@ -198,7 +236,7 @@ python3 pixel_dungeon.py --fps 15 --no-light --no-particle
 ### 终端显示异常
 - 确保终端支持 Unicode
 - 使用支持真彩色的终端（iTerm2、Windows Terminal、alacritty等）
-- 终端大小建议 100x35 以上
+- 终端大小建议 100×35 以上
 
 ### Rich 库安装失败
 ```bash
@@ -217,10 +255,29 @@ conda install -c conda-forge rich
 
 ```
 /home/linn/pixel-dungeon/
-├── pixel_dungeon.py      # 🎮 主游戏文件
-├── launcher.py           # 🚀 现代化TUI启动器
-├── check_env.py          # 🔍 环境检测（调用启动器）
-├── start_dungeon.sh      # 🚀 Bash启动脚本
+├── pixel_dungeon.py      # 🎮 主入口
+├── pixel_dungeon/        # 📦 游戏模块
+│   ├── config.py         # 全局配置
+│   ├── core/             # 核心逻辑
+│   │   ├── game.py       # 游戏主循环
+│   │   ├── player.py     # 玩家实体
+│   │   └── enemy.py      # 敌人实体
+│   ├── systems/          # 子系统
+│   │   ├── shop.py       # 商店
+│   │   ├── upgrades.py   # 升级池
+│   │   └── achievements.py # 成就
+│   ├── ui/               # UI 渲染
+│   │   ├── renderer.py   # Rich 渲染器
+│   │   └── screens.py    # 启动画面
+│   └── utils/            # 工具
+│       ├── save_load.py  # 存档
+│       └── ota.py        # 自动更新
+├── launcher.py           # 🚀 现代化 TUI 启动器
+├── start_dungeon.sh      # 🚀 Bash 启动脚本
+├── install.sh            # 📥 一键安装（Linux/macOS）
+├── install.ps1           # 📥 一键安装（Windows）
+├── uninstall.sh          # 🗑️ 卸载脚本
+├── uninstall.ps1         # 🗑️ 卸载脚本
 ├── README.md             # 📖 本文件
 └── AGENTS.md             # 📋 开发者文档
 ```

@@ -15,7 +15,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pixel-dungeon"
-version = "1.0.0"
+version = "1.1.0"
 description = "像素地牢 - 跨平台 Roguelike TUI 游戏"
 requires-python = ">=3.7"
 dependencies = [

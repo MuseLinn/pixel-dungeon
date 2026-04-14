@@ -7,7 +7,7 @@ import subprocess
 import urllib.request
 from pathlib import Path
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 REPO = "muselinn/pixel-dungeon"
 GITHUB_API = f"https://api.github.com/repos/{REPO}/releases/latest"
 
@@ -63,21 +63,31 @@ def check_and_update() -> tuple[bool, str]:
         if fetch.returncode != 0:
             return False, "无法连接到更新服务器"
 
-        status = subprocess.run(
-            ["git", "status", "-uno"],
+        local = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
             cwd=str(root),
             capture_output=True,
             text=True,
             check=False,
         )
-        if (
-            "Your branch is up to date" in status.stdout
-            or "Your branch is up-to-date" in status.stdout
-        ):
-            return True, f"当前已是最新版本 {VERSION}"
+        remote = subprocess.run(
+            ["git", "rev-parse", "origin/master"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if local.returncode == 0 and remote.returncode == 0:
+            if local.stdout.strip() == remote.stdout.strip():
+                return True, f"当前已是最新版本 {VERSION}"
 
         ok, msg = update_via_git(root)
         if ok:
+            if (
+                "already up to date" in msg.lower()
+                or "already up-to-date" in msg.lower()
+            ):
+                return True, f"当前已是最新版本 {VERSION}"
             return True, "已更新到最新版本，请重启游戏"
         return False, f"更新失败: {msg}"
     except Exception as e:

@@ -288,7 +288,7 @@ def create_about_screen(frame: int = 0, extra_msg: str = "") -> Layout:
     text = Text()
     text.append(_glitch_text("关于 像素地牢", frame, "bold cyan", 0.15))
     text.append("\n\n", style="")
-    text.append("版本: v1.0\n", style="white")
+    text.append("版本: v1.1.0\n", style="white")
     text.append("作者: muselinn & opencode\n", style="white")
     text.append("GitHub: github.com/muselinn/pixel-dungeon\n", style="dim cyan")
     text.append("引擎: Python + Rich TUI\n", style="white")
