@@ -302,12 +302,12 @@ class Renderer:
             height=6,
         )
 
-    def create_log_panel(self, game) -> Tuple[Panel, int]:
+    def create_log_panel(self, game, height: int) -> Panel:
         log_text = Text()
-        visible_count = 6
-        actual_count = min(visible_count, len(game.messages))
+        content_h = max(height - 2, 1)
+        actual_count = min(content_h, len(game.messages))
 
-        for msg, style, msg_type in game.messages[-visible_count:]:
+        for msg, style, msg_type in game.messages[-content_h:]:
             if msg_type == "combat":
                 prefix = "⚔ "
             elif msg_type == "item":
@@ -323,15 +323,13 @@ class Renderer:
 
             log_text.append(f"{prefix}{msg}\n", style=style)
 
-        height = max(actual_count, 1) + 2
-        panel = Panel(
+        return Panel(
             log_text,
             title="[bold yellow]日志[/bold yellow]",
             border_style="yellow",
             box=box.ROUNDED,
             height=height,
         )
-        return panel, height
 
     def create_legend_panel(self) -> Panel:
         table = Table(show_header=False, box=None, padding=(0, 1), expand=False)
@@ -348,7 +346,7 @@ class Renderer:
             cell(" ▄██▄ ", "bright_green", "勇者"),
             cell(" ▲▲▲▲ ", "bright_cyan", "法师"),
             cell(" ▼▼▼▼ ", "bright_red", "刺客"),
-            cell(" ▄▓▓▄ ", "bright_yellow", "圣骑"),
+            cell(" ▄██▄ ", "bright_yellow", "圣骑"),
             Text(),
         )
         table.add_row(
@@ -472,12 +470,17 @@ class Renderer:
         layout = Layout()
 
         map_panel = self.create_map_panel(game)
-        log_panel, log_h = self.create_log_panel(game)
+
+        legend_h = 6
+        stats_h = 6
+        minimap_h = 12
+        log_h = max(self.console.height - legend_h - stats_h - minimap_h, 4)
+        log_panel = self.create_log_panel(game, log_h)
 
         right_layout = Layout()
         right_layout.split_column(
-            Layout(self.create_stats_panel(game), size=6),
-            Layout(self.create_minimap_panel(game), size=12),
+            Layout(self.create_stats_panel(game), size=stats_h),
+            Layout(self.create_minimap_panel(game), size=minimap_h),
             Layout(log_panel, size=log_h),
         )
 
