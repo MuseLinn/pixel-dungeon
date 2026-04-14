@@ -14,6 +14,7 @@ from rich.live import Live
 from ..input_handler import CrossPlatformInputHandler
 from ..utils.save_load import SaveManager
 from ..utils.i18n import _
+from ..utils.ota import get_version
 from ..config import CONFIG
 
 
@@ -97,7 +98,7 @@ def create_modern_title(
         "                                      |___/",
         "",
         "                    P I X E L   D U N G E O N",
-        "                         像素地牢 v1.0",
+        "                         像素地牢 v{}",
         "",
     ]
 
@@ -106,7 +107,9 @@ def create_modern_title(
     glitch_prob = 0.15 if 5 < frame % 20 < 15 else 0.02
 
     logo_text = Text()
-    for line in base_logo:
+    version = get_version()
+    for raw_line in base_logo:
+        line = raw_line.format(version)
         for ch in line:
             if ch == " ":
                 logo_text.append(" ")
