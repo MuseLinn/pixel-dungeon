@@ -27,7 +27,7 @@ class Enemy:
 
     def animate(self) -> None:
         """更新动画帧"""
-        self.frame = (self.frame + 1) % 20
+        self.frame = (self.frame + 1) % 8
         if self.flash > 0:
             self.flash -= 1
 
@@ -39,7 +39,7 @@ class Enemy:
             return block, "bold white"
 
         asset = get_enemy_asset(self.enemy_type)
-        if self.frame < 10:
+        if self.frame < 4:
             return asset["sprite"], asset["style"]
         else:
             return asset["alt_sprite"], asset["style_alt"]

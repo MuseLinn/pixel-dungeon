@@ -14,9 +14,10 @@ from ..input_handler import CrossPlatformInputHandler
 
 
 def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layout:
+    import random
     from ..assets import GAME_ASSETS, CHARACTERS
 
-    logo_lines = [
+    base_logo = [
         "",
         "    ___ _         _   ___",
         "   | _ (_)_ _____| | |   \\ _  _ _ _  __ _ ___ ___ _ _",
@@ -28,6 +29,25 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
         "                         像素地牢 v1.0",
         "",
     ]
+
+    glitch_chars = ["▓", "▒", "░", "█", "▀", "▄"]
+    pulse = (frame % 20) / 20.0
+    glitch_prob = 0.15 if 5 < frame % 20 < 15 else 0.02
+
+    logo_text = Text()
+    for line in base_logo:
+        for ch in line:
+            if ch == " ":
+                logo_text.append(" ")
+            elif random.random() < glitch_prob:
+                gch = random.choice(glitch_chars)
+                logo_text.append(gch, style="dim cyan")
+            elif random.random() < 0.05:
+                logo_text.append(ch, style="dim")
+            else:
+                style = "bright_cyan" if pulse > 0.3 else "cyan"
+                logo_text.append(ch, style=style)
+        logo_text.append("\n")
 
     features = [
         ("♛", "bright_green", "4种角色", "勇者·法师·刺客·圣骑"),
@@ -82,12 +102,11 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
         char_content.append(f" {name:6}", style=name_style)
         char_content.append(f" {desc}\n", style=desc_style)
 
-    logo_text = Text("\n".join(logo_lines), style="cyan")
     logo_panel = Panel(
         Align.center(logo_text),
         border_style="cyan",
         box=box.DOUBLE if frame % 2 == 0 else box.ROUNDED,
-        height=len(logo_lines) + 2,
+        height=len(base_logo) + 2,
     )
 
     panel_height = 16

@@ -46,11 +46,11 @@ class Player:
 
     def animate(self) -> None:
         """更新动画帧"""
-        self.frame = (self.frame + 1) % 40
+        self.frame = (self.frame + 1) % 16
 
     def get_render_sprite(self) -> Tuple[List[str], str]:
         asset = get_player_asset(self.char_set)
-        if self.frame < 20:
+        if self.frame < 8:
             return asset["sprite"], asset["style"]
         else:
             return asset["alt_sprite"], asset["style_alt"]
