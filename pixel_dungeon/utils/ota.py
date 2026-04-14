@@ -66,5 +66,49 @@ def check_and_update() -> tuple[bool, str]:
     return False, "暂不支持非 Git 仓库的自动更新，请手动下载新版本"
 
 
+def uninstall() -> tuple[bool, str]:
+    import shutil
+    import platform
+
+    install_dir = Path.home() / ".local" / "share" / "pixel-dungeon"
+    if platform.system() == "Windows":
+        install_dir = (
+            Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+            / "pixel-dungeon"
+        )
+        bin_dir = (
+            Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+            / "Microsoft"
+            / "WindowsApps"
+        )
+        wrapper = bin_dir / "pixel-dungeon.bat"
+    else:
+        bin_dir = Path.home() / ".local" / "bin"
+        wrapper = bin_dir / "pixel-dungeon"
+
+    messages = []
+    if install_dir.exists():
+        shutil.rmtree(install_dir)
+        messages.append(f"已删除 {install_dir}")
+    else:
+        messages.append("安装目录不存在")
+
+    if wrapper.exists():
+        wrapper.unlink()
+        messages.append(f"已删除启动器 {wrapper}")
+
+    for rc in [Path.home() / ".bashrc", Path.home() / ".zshrc"]:
+        if rc.exists():
+            content = rc.read_text(encoding="utf-8")
+            new_content = "\n".join(
+                line for line in content.splitlines() if "pixel-dungeon" not in line
+            )
+            if new_content != content:
+                rc.write_text(new_content, encoding="utf-8")
+                messages.append(f"已清理 {rc}")
+
+    return True, "\n".join(messages)
+
+
 def get_version() -> str:
     return VERSION

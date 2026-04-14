@@ -43,18 +43,12 @@ def main():
         return
 
     if args.uninstall:
-        import platform
+        from .utils.ota import uninstall
 
-        if platform.system() == "Windows":
-            print("请在 PowerShell 中运行:")
-            print(
-                "  iwr -useb https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/uninstall.ps1 | iex"
-            )
-        else:
-            print("请在终端中运行:")
-            print(
-                "  curl -sSL https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/uninstall.sh | bash"
-            )
+        ok, msg = uninstall()
+        print(msg)
+        if ok:
+            print("==> 卸载完成")
         return
 
     if args.update:
