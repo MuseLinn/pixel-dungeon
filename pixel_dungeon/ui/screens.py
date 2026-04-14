@@ -163,7 +163,7 @@ def create_modern_title(
 
     menu_content = Text()
     menu_content.append(_glitch_text(_("main_menu"), frame, "bold cyan underline"))
-    menu_content.append("\n─" * 16 + "\n", style="dim")
+    menu_content.append("\n" + "─" * 16 + "\n", style="dim")
     for i, (label, action, enabled) in enumerate(menu_items):
         is_selected = i == menu_index
         prefix = ">>> " if is_selected else "     "
@@ -186,16 +186,17 @@ def create_modern_title(
 
     controls_content = Text()
     controls_content.append(_glitch_text(_("controls"), frame, "bold cyan underline"))
-    controls_content.append("\n─" * 12 + "\n", style="dim")
+    controls_content.append("\n" + "─" * 12 + "\n", style="dim")
     for key, action in controls:
         controls_content.append(f"{key:>8}", style="bold white on dark_blue")
         controls_content.append(f"  {action}\n", style="white")
 
+    logo_lines = logo_text.plain.count("\n") + 1
     logo_panel = Panel(
         Align.center(logo_text),
         border_style="cyan",
         box=box.DOUBLE if frame % 2 == 0 else box.ROUNDED,
-        height=len(base_logo) + 2,
+        height=logo_lines + 2,
     )
 
     panel_height = 16
@@ -232,11 +233,11 @@ def create_modern_title(
 
     content_layout = Layout()
     content_layout.split_column(
-        Layout(logo_panel, size=len(base_logo) + 2),
+        Layout(logo_panel, size=logo_lines + 2),
         Layout(info_layout, size=panel_height),
     )
 
-    total_content_h = len(base_logo) + 2 + panel_height
+    total_content_h = logo_lines + 2 + panel_height
 
     def _decorate_spacer(style: str) -> Text:
         import random
