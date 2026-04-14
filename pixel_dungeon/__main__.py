@@ -64,6 +64,10 @@ def main():
             game = Game()
             game.init_game(char_set=selected_char)
             if game.load_game(0):
+                px, py = game.player.x, game.player.y
+                game.init_map()
+                game.player.x, game.player.y = px, py
+                game.update_explored()
                 game.run()
             else:
                 game.run()

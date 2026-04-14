@@ -60,6 +60,9 @@ class Game:
         self.frame_count = 0
         self.transition_timer = 0
         self.transition_text = ""
+        self.menu_transition_timer = 0
+        self.menu_transition_type = ""
+        self.map_seed = None
 
         # 消息日志
         self.messages: List[Tuple[str, str, str]] = []
@@ -84,9 +87,15 @@ class Game:
         self.commands = CommandHandler(self)
         self.transition_timer = 0
         self.transition_text = ""
+        self.menu_transition_timer = 0
+        self.menu_transition_type = ""
         self.add_msg("欢迎来到像素地牢！", "green", "system")
 
     def init_map(self) -> None:
+        if self.map_seed is None:
+            self.map_seed = random.randint(0, 2**31 - 1)
+        random.seed(self.map_seed)
+
         self.map = [
             [TileType.EMPTY for _ in range(CONFIG.map_width)]
             for _ in range(CONFIG.map_height)
@@ -118,6 +127,8 @@ class Game:
         self.spawn_enemies()
         self.spawn_items()
         self.map[CONFIG.map_height - 2][CONFIG.map_width - 2] = TileType.EXIT
+
+        random.seed()
         self.update_explored()
 
     def update_explored(self) -> None:
@@ -424,6 +435,7 @@ class Game:
         self.add_msg(f"进入第 {self.floor} 层...", "cyan", "system")
         self.transition_text = f" 进入第 {self.floor} 层 "
         self.transition_timer = 25
+        self.map_seed = random.randint(0, 2**31 - 1)
         self.init_map()
         self.particles.clear()
 
@@ -537,15 +549,27 @@ class Game:
 
                         if self.transition_timer > 0:
                             self.transition_timer -= 1
+                        if self.menu_transition_timer > 0:
+                            self.menu_transition_timer -= 1
+                            if (
+                                self.menu_transition_timer == 0
+                                and self.menu_transition_type == "out"
+                            ):
+                                self.return_to_menu = True
 
                         # 更新游戏时间
                         self.stats["play_time"] = int(time.time() - self.start_time)
 
                         # 处理输入
-                        self.handle_input(handler)
+                        if self.menu_transition_timer <= 0:
+                            self.handle_input(handler)
 
                         # 更新动画
-                        if not self.paused and self.state == "playing":
+                        if (
+                            not self.paused
+                            and self.state == "playing"
+                            and self.menu_transition_timer <= 0
+                        ):
                             self.animate()
 
                         # 渲染
@@ -555,6 +579,7 @@ class Game:
                             self.running = False
                             break
                     except KeyboardInterrupt:
+                        self.save_game()
                         self.running = False
                         break
 
@@ -614,9 +639,10 @@ class Game:
         elif key.lower() == "r":
             self.restart_game()
         elif key.lower() == "m":
-            self.return_to_menu = True
-            self.running = False
+            self.menu_transition_type = "out"
+            self.menu_transition_timer = 20
         elif key.lower() == "q":
+            self.save_game()
             self.running = False
         elif key == "/" or key == "\x18":
             self.cmd_mode = True
@@ -685,9 +711,10 @@ class Game:
         if key.lower() == "r":
             self.restart_game()
         elif key.lower() == "m":
-            self.return_to_menu = True
-            self.running = False
+            self.menu_transition_type = "out"
+            self.menu_transition_timer = 20
         elif key.lower() == "q":
+            self.save_game()
             self.running = False
 
     def handle_pause_input(self, key: str) -> None:
@@ -699,9 +726,10 @@ class Game:
             self.toggle_pause()
             self.restart_game()
         elif key.lower() == "m":
-            self.return_to_menu = True
-            self.running = False
+            self.menu_transition_type = "out"
+            self.menu_transition_timer = 20
         elif key.lower() == "q":
+            self.save_game()
             self.running = False
         elif key == "\x1b":
             self.toggle_pause()
@@ -712,7 +740,11 @@ class Game:
         self.init_game(char)
 
     def render(self, live) -> None:
-        if self.transition_timer > 0:
+        if self.menu_transition_timer > 0:
+            layout = self.renderer.render_with_menu_transition(
+                self, self.frame_count, self.menu_transition_type
+            )
+        elif self.transition_timer > 0:
             layout = self.renderer.render_with_transition(self, self.frame_count)
         elif self.paused:
             layout = self.renderer.render_with_pause(self.frame_count)
@@ -721,7 +753,7 @@ class Game:
                 self, self.cmd_buffer, self.cmd_suggestions
             )
         elif self.state == "upgrading":
-            layout = self.renderer.render_with_upgrade(self)
+            layout = self.renderer.render_with_upgrade(self, self.frame_count)
         elif self.state == "shopping":
             layout = self.renderer.render_with_shop(self)
         elif self.state == "game_over":

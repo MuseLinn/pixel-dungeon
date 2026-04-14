@@ -14,6 +14,61 @@ from ..input_handler import CrossPlatformInputHandler
 from ..utils.save_load import SaveManager
 
 
+def create_menu_transition_layout(frame: int, console, direction: str = "in") -> Layout:
+    import random
+    import math
+
+    total_w = console.width
+    total_h = console.height
+    cx = total_w // 2
+    cy = total_h // 2
+    max_dist = math.sqrt(cx**2 + cy**2) + 2
+    progress = frame / 15.0
+
+    lines = []
+    for y in range(total_h):
+        line = Text()
+        for x in range(total_w):
+            dist = math.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+            if direction == "in":
+                show_glitch = dist > progress * max_dist
+            else:
+                show_glitch = dist < (1.0 - progress) * max_dist
+            if show_glitch:
+                gch = random.choice(
+                    [
+                        "▓",
+                        "▒",
+                        "░",
+                        "█",
+                        "▀",
+                        "▄",
+                        "▌",
+                        "▐",
+                        "▖",
+                        "▗",
+                        "▘",
+                        "▙",
+                        "▚",
+                        "▛",
+                        "▜",
+                        "▝",
+                        "▞",
+                        "▟",
+                    ]
+                )
+                line.append(
+                    gch, style=random.choice(["dim cyan", "dim blue", "dim magenta"])
+                )
+            else:
+                line.append(" ", style="black")
+        lines.append(line)
+
+    full_text = Text("\n").join(lines)
+    layout = Layout(full_text)
+    return layout
+
+
 def create_modern_title(
     frame: int = 0, menu_index: int = 0, has_save: bool = False
 ) -> Layout:
@@ -263,6 +318,17 @@ def show_title_screen() -> tuple:
                         action = menu_items[menu_index][1]
                         if action == "help":
                             showing_help = True
+                        elif action in ("start", "continue"):
+                            for f in range(15):
+                                live.update(
+                                    create_menu_transition_layout(
+                                        frame=f,
+                                        console=live.console,
+                                        direction="in",
+                                    )
+                                )
+                                time.sleep(0.04)
+                            return (action, selected_char)
                         else:
                             return (action, selected_char)
                     elif key == "\x03" or key.lower() == "q":

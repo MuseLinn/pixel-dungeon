@@ -154,6 +154,49 @@ class Renderer:
                         sprite_rows = [gch * tile_w for _ in range(tile_h)]
                         style = random.choice(["dim cyan", "dim blue", "dim magenta"])
 
+                if (
+                    hasattr(game, "menu_transition_timer")
+                    and game.menu_transition_timer > 0
+                ):
+                    import random
+
+                    progress = 1.0 - (game.menu_transition_timer / 20.0)
+                    vp_w = x2 - x1
+                    vp_h = y2 - y1
+                    max_dist = math.sqrt((vp_w / 2) ** 2 + (vp_h / 2) ** 2) + 2
+                    td = math.sqrt((lx - px) ** 2 + (ly - py) ** 2)
+                    direction = getattr(game, "menu_transition_type", "out")
+                    show_glitch = (
+                        td > (1.0 - progress) * max_dist
+                        if direction == "out"
+                        else td < progress * max_dist
+                    )
+                    if show_glitch:
+                        gch = random.choice(
+                            [
+                                "▓",
+                                "▒",
+                                "░",
+                                "█",
+                                "▀",
+                                "▄",
+                                "▌",
+                                "▐",
+                                "▖",
+                                "▗",
+                                "▘",
+                                "▙",
+                                "▚",
+                                "▛",
+                                "▜",
+                                "▝",
+                                "▞",
+                                "▟",
+                            ]
+                        )
+                        sprite_rows = [gch * tile_w for _ in range(tile_h)]
+                        style = random.choice(["dim cyan", "dim blue", "dim magenta"])
+
                 if light > 0 and in_bounds:
                     p = particle_map.get((lx, ly))
                     if p:
@@ -428,25 +471,44 @@ class Renderer:
             height=12,
         )
 
-    def create_upgrade_panel(self, game) -> Panel:
+    def create_upgrade_panel(self, game, frame: int = 0) -> Panel:
         text = Text()
-        text.append("升级选择!\n\n", style="bold yellow")
+        text.append(self._glitch_text("升级选择!", frame, "bold yellow", 0.15))
+        text.append("\n\n", style="")
+
+        rarity_colors = {
+            "common": "white",
+            "rare": "bright_cyan",
+            "epic": "bright_magenta",
+            "legendary": "bright_yellow",
+        }
 
         for i, upgrade in enumerate(game.upgrades[:3]):
             num = i + 1
+            color = rarity_colors.get(upgrade.rarity, "white")
+            sel_prefix = ">>> " if i == game.sel_upgrade else "    "
+            text.append(
+                f"{sel_prefix}",
+                style="bold yellow on dark_green" if i == game.sel_upgrade else "",
+            )
             text.append(f"[{num}] ", style="bold yellow")
-            text.append(f"{upgrade.name}\n", style="bold white")
+            text.append(self._glitch_text(upgrade.name, frame, f"bold {color}", 0.08))
+            text.append("\n", style="")
             text.append(f"    {upgrade.description}\n", style="dim")
-            text.append("\n")
+            text.append("\n", style="")
 
         text.append("1-3 选择升级", style="dim")
 
+        pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
+        border = "bright_yellow" if frame % 24 < 12 else "yellow"
+
         return Panel(
-            text,
+            Align.center(text, vertical="middle"),
             title="[bold yellow]升级[/bold yellow]",
-            border_style="yellow",
-            box=box.ROUNDED,
-            height=20,
+            border_style=border,
+            box=pulse_box,
+            width=46,
+            height=18,
         )
 
     def create_shop_panel(self, game) -> Panel:
@@ -516,7 +578,7 @@ class Renderer:
 
     def create_pause_panel(self, frame: int = 0) -> Panel:
         text = Text()
-        text.append(self._glitch_text("游戏暂停", frame, "bold yellow"))
+        text.append(self._glitch_text("游戏暂停", frame, "bold yellow", 0.18))
         text.append("\n\n", style="")
         text.append("P - 继续游戏\n", style="white")
         text.append("S - 保存游戏\n", style="white")
@@ -524,8 +586,8 @@ class Renderer:
         text.append("M - 返回主菜单\n", style="white")
         text.append("Q - 退出游戏\n", style="white")
 
-        pulse_box = box.DOUBLE if frame % 4 < 2 else box.ROUNDED
-        border = "bright_yellow" if frame % 6 < 3 else "yellow"
+        pulse_box = box.DOUBLE if frame % 30 < 15 else box.ROUNDED
+        border = "bright_yellow" if frame % 40 < 20 else "yellow"
 
         return Panel(
             Align.center(text, vertical="middle"),
@@ -605,8 +667,8 @@ class Renderer:
         )
         return layout
 
-    def render_with_upgrade(self, game) -> Layout:
-        return self._modal_layout(self.create_upgrade_panel(game))
+    def render_with_upgrade(self, game, frame: int = 0) -> Layout:
+        return self._modal_layout(self.create_upgrade_panel(game, frame))
 
     def render_with_shop(self, game) -> Layout:
         return self._modal_layout(self.create_shop_panel(game))
@@ -618,6 +680,11 @@ class Renderer:
         return self._modal_layout(self.create_gameover_panel(game))
 
     def render_with_transition(self, game, frame: int = 0) -> Layout:
+        return self.render_game(game)
+
+    def render_with_menu_transition(
+        self, game, frame: int = 0, direction: str = "out"
+    ) -> Layout:
         return self.render_game(game)
 
     def render_with_command_overlay(
