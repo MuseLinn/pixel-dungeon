@@ -149,7 +149,7 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
 
     content_layout = Layout()
     content_layout.split_column(
-        Layout(logo_panel, size=len(logo_lines) + 2),
+        Layout(logo_panel, size=len(base_logo) + 2),
         Layout(info_layout, size=panel_height),
     )
 
