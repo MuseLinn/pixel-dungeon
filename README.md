@@ -37,8 +37,10 @@ curl -sSL https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/instal
 
 #### Windows (PowerShell)
 ```powershell
-iwr -useb https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/install.ps1 | iex
+irm https://raw.githubusercontent.com/muselinn/pixel-dungeon/master/install.ps1 | iex
 ```
+> **注意**：PowerShell 7.6.0 有一个 `Invoke-WebRequest`（`iwr`）的编码 bug，会导致中文显示为 `?`。
+> 推荐使用 `irm`（`Invoke-RestMethod`）代替，或直接下载后执行：`iwr -OutFile install.ps1; .\install.ps1`
 
 安装完成后可直接运行：
 ```bash
