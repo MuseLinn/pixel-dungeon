@@ -52,9 +52,7 @@ class UpgradePool:
         "legendary": 5,
     }
 
-    # 所有可用升级
     ALL_UPGRADES = [
-        # 普通
         Upgrade(
             "生命强化",
             "最大生命 +20",
@@ -85,7 +83,20 @@ class UpgradePool:
             "common",
             "🛡",
         ),
-        # 稀有
+        Upgrade(
+            "敏捷训练",
+            "闪避率 +10%",
+            lambda p: setattr(p, "dodge", getattr(p, "dodge", 0) + 10),
+            "common",
+            "🏃",
+        ),
+        Upgrade(
+            "毒素武器",
+            "攻击附加毒伤 3/回合",
+            lambda p: setattr(p, "poison_atk", getattr(p, "poison_atk", 0) + 3),
+            "common",
+            "🐍",
+        ),
         Upgrade(
             "生命偷取",
             "攻击恢复 10%伤害",
@@ -121,7 +132,20 @@ class UpgradePool:
             "rare",
             "🗿",
         ),
-        # 史诗
+        Upgrade(
+            "连击",
+            "25%概率攻击2次",
+            lambda p: setattr(p, "double_hit", getattr(p, "double_hit", 0) + 25),
+            "rare",
+            "⚔️",
+        ),
+        Upgrade(
+            "荆棘护甲",
+            "反弹15%受到伤害",
+            lambda p: setattr(p, "thorns", getattr(p, "thorns", 0) + 15),
+            "rare",
+            "🌵",
+        ),
         Upgrade(
             "吸血鬼",
             "吸血 +25%",
@@ -136,7 +160,20 @@ class UpgradePool:
             "epic",
             "🌀",
         ),
-        # 传说
+        Upgrade(
+            "灵魂汲取",
+            "击杀敌人恢复10%最大生命",
+            lambda p: setattr(p, "soul_drain", True),
+            "epic",
+            "💀",
+        ),
+        Upgrade(
+            "雷霆一击",
+            "暴击伤害变为3倍",
+            lambda p: setattr(p, "crit_mult", getattr(p, "crit_mult", 2.0) + 1.0),
+            "epic",
+            "⚡",
+        ),
         Upgrade(
             "不朽",
             "生命+100 恢复+5",
@@ -154,6 +191,13 @@ class UpgradePool:
             lambda p: setattr(p, "atk", p.atk + 15) or setattr(p, "crit", p.crit + 20),
             "legendary",
             "☠",
+        ),
+        Upgrade(
+            "时空行者",
+            "闪避+30% 移速+1",
+            lambda p: setattr(p, "dodge", getattr(p, "dodge", 0) + 30),
+            "legendary",
+            "🌌",
         ),
     ]
 

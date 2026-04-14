@@ -152,7 +152,6 @@ class SaveManager:
         return self._get_save_path(slot).exists()
 
     def _serialize_player(self, player) -> Dict:
-        """序列化玩家数据"""
         return {
             "x": player.x,
             "y": player.y,
@@ -168,10 +167,18 @@ class SaveManager:
             "lifesteal": player.lifesteal,
             "regen": player.regen,
             "char_set": player.char_set,
+            "dodge": getattr(player, "dodge", 0),
+            "poison_atk": getattr(player, "poison_atk", 0),
+            "double_hit": getattr(player, "double_hit", 0),
+            "thorns": getattr(player, "thorns", 0),
+            "soul_drain": getattr(player, "soul_drain", False),
+            "crit_mult": getattr(player, "crit_mult", 2.0),
+            "bomb_charges": getattr(player, "bomb_charges", 0),
+            "invincible_charges": getattr(player, "invincible_charges", 0),
+            "gold_bonus_floors": getattr(player, "gold_bonus_floors", 0),
         }
 
     def _deserialize_player(self, player, data: Dict) -> None:
-        """反序列化玩家数据"""
         player.x = data.get("x", 1)
         player.y = data.get("y", 1)
         player.hp = data.get("hp", 100)
@@ -186,3 +193,12 @@ class SaveManager:
         player.lifesteal = data.get("lifesteal", 0)
         player.regen = data.get("regen", 0)
         player.char_set = data.get("char_set", "default")
+        player.dodge = data.get("dodge", 0)
+        player.poison_atk = data.get("poison_atk", 0)
+        player.double_hit = data.get("double_hit", 0)
+        player.thorns = data.get("thorns", 0)
+        player.soul_drain = data.get("soul_drain", False)
+        player.crit_mult = data.get("crit_mult", 2.0)
+        player.bomb_charges = data.get("bomb_charges", 0)
+        player.invincible_charges = data.get("invincible_charges", 0)
+        player.gold_bonus_floors = data.get("gold_bonus_floors", 0)

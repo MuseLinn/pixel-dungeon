@@ -21,9 +21,13 @@ class Enemy:
     exp: int
     gold: int
 
-    # 状态效果
-    flash: int = field(default=0, repr=False)  # 受击闪烁帧数
-    frame: int = field(default=0, repr=False)  # 动画帧
+    prefix: str = ""
+    hp_mult: float = 1.0
+    atk_mult: float = 1.0
+    gold_mult: float = 1.0
+
+    flash: int = field(default=0, repr=False)
+    frame: int = field(default=0, repr=False)
 
     def animate(self) -> None:
         """更新动画帧"""
@@ -66,9 +70,28 @@ class Enemy:
         base_gold: int,
         floor: int,
         scale_override: float = None,
+        prefix: str = "",
+        hp_mult: float = 1.0,
+        atk_mult: float = 1.0,
+        gold_mult: float = 1.0,
     ) -> "Enemy":
         scale = 1 + (floor - 1) * (
             scale_override if scale_override is not None else 0.15
+        )
+        return cls(
+            enemy_type=enemy_type,
+            name=name,
+            x=x,
+            y=y,
+            hp=int(base_hp * scale * hp_mult),
+            max_hp=int(base_hp * scale * hp_mult),
+            atk=int(base_atk * scale * atk_mult),
+            exp=int(base_exp * scale),
+            gold=int(base_gold * scale * gold_mult),
+            prefix=prefix,
+            hp_mult=hp_mult,
+            atk_mult=atk_mult,
+            gold_mult=gold_mult,
         )
         return cls(
             enemy_type=enemy_type,

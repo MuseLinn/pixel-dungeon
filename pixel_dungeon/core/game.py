@@ -213,8 +213,14 @@ class Game:
         elif CONFIG.difficulty == "hard":
             scale = scale * 1.4
 
+        from ..assets import ENEMY_PREFIXES
+
         for _ in range(num_enemies):
-            enemy_type, name, hp, atk, exp, gold = random.choice(available)
+            enemy_type, base_name, hp, atk, exp, gold = random.choice(available)
+
+            prefix_entry = random.choice(ENEMY_PREFIXES)
+            prefix, hp_mult, atk_mult, gold_mult = prefix_entry
+            name = prefix + base_name if prefix else base_name
 
             for _ in range(100):
                 x = random.randint(1, CONFIG.map_width - 2)
@@ -226,7 +232,20 @@ class Game:
                     and abs(x - self.player.x) + abs(y - self.player.y) > 5
                 ):
                     enemy = Enemy.create(
-                        enemy_type, name, x, y, hp, atk, exp, gold, self.floor, scale
+                        enemy_type,
+                        name,
+                        x,
+                        y,
+                        hp,
+                        atk,
+                        exp,
+                        gold,
+                        self.floor,
+                        scale,
+                        prefix=prefix,
+                        hp_mult=hp_mult,
+                        atk_mult=atk_mult,
+                        gold_mult=gold_mult,
                     )
                     self.enemies.append(enemy)
                     break
@@ -296,20 +315,21 @@ class Game:
 
         return True
 
-    def attack(self, enemy: Enemy) -> None:
-        """玩家攻击敌人"""
-        # 计算伤害
+    def _do_player_strike(self, enemy: Enemy) -> bool:
         damage = self.player.atk
         is_crit = random.randint(1, 100) <= self.player.crit
 
         if is_crit:
-            damage = int(damage * 2)
+            damage = int(damage * self.player.crit_mult)
             self.stats["max_crit_damage"] = max(self.stats["max_crit_damage"], damage)
 
-        # 造成伤害
+        if self.player.bomb_charges > 0:
+            damage += 50
+            self.player.bomb_charges -= 1
+            self.add_msg("炸弹爆炸！", "yellow", "combat")
+
         enemy.take_damage(damage)
 
-        # 显示伤害
         self.particles.spawn(enemy.x, enemy.y, 5, ["*"], ["red"])
         self.particles.add_text(
             enemy.x, enemy.y, str(damage), "bold yellow" if is_crit else "white", 25
@@ -320,7 +340,6 @@ class Game:
             msg += " (暴击!)"
         self.add_msg(msg, "red" if is_crit else "white", "combat")
 
-        # 生命偷取
         if self.player.lifesteal > 0 and damage > 0:
             heal = int(damage * self.player.lifesteal / 100)
             if heal > 0:
@@ -330,27 +349,57 @@ class Game:
                     self.player.x, self.player.y, f"+{actual}", "green", 20
                 )
 
-        # 检查击杀
         if not enemy.is_alive():
             self.kill_enemy(enemy)
+            return True
+        return False
 
-        # 敌人回合
+    def attack(self, enemy: Enemy) -> None:
+        """玩家攻击敌人"""
+        killed = self._do_player_strike(enemy)
+
+        if (
+            not killed
+            and enemy.is_alive()
+            and random.randint(1, 100) <= self.player.double_hit
+        ):
+            self.add_msg("连击！", "cyan", "combat")
+            killed = self._do_player_strike(enemy)
+
+        if not killed and enemy.is_alive() and self.player.poison_atk > 0:
+            if not hasattr(enemy, "poison_stacks"):
+                enemy.poison_stacks = 0
+            enemy.poison_stacks += self.player.poison_atk
+            self.add_msg(f"{enemy.name} 中毒了！", "green", "combat")
+
         self.enemy_turn()
         self.animate()
 
     def kill_enemy(self, enemy: Enemy) -> None:
         """击杀敌人"""
         self.particles.spawn(enemy.x, enemy.y, 8, ["*", "+"], ["red", "yellow"])
+        gold_gain = enemy.gold
+        if self.player.gold_bonus_floors > 0:
+            gold_gain = int(gold_gain * 1.2)
         self.add_msg(
-            f"击败了 {enemy.name}！获得 {enemy.exp} 经验, {enemy.gold}G",
+            f"击败了 {enemy.name}！获得 {enemy.exp} 经验, {gold_gain}G",
             "yellow",
             "combat",
         )
 
         self.player.exp += enemy.exp
-        self.player.gold += enemy.gold
+        self.player.gold += gold_gain
         self.stats["enemies_killed"] += 1
-        self.stats["total_gold_earned"] += enemy.gold
+        self.stats["total_gold_earned"] += gold_gain
+
+        if self.player.soul_drain:
+            heal = int(self.player.max_hp * 0.1)
+            if heal > 0:
+                actual = self.player.heal(heal)
+                self.stats["total_healed"] += actual
+                self.particles.add_text(
+                    self.player.x, self.player.y, f"+{actual}", "green", 20
+                )
 
         # 检查升级
         if self.player.exp >= self.player.exp_next:
@@ -388,6 +437,15 @@ class Game:
 
             enemy.animate()
 
+            if hasattr(enemy, "poison_stacks") and enemy.poison_stacks > 0:
+                poison_dmg = min(enemy.poison_stacks, 10)
+                enemy.hp = max(0, enemy.hp - poison_dmg)
+                enemy.poison_stacks -= 1
+                self.particles.add_text(enemy.x, enemy.y, f"-{poison_dmg}", "green", 20)
+                if not enemy.is_alive():
+                    self.kill_enemy(enemy)
+                    continue
+
             # 简单AI：如果相邻则攻击，否则移动
             dx = abs(enemy.x - self.player.x)
             dy = abs(enemy.y - self.player.y)
@@ -404,11 +462,32 @@ class Game:
 
     def enemy_attack(self, enemy: Enemy) -> None:
         """敌人攻击玩家"""
+        if random.randint(1, 100) <= self.player.dodge:
+            self.particles.add_text(self.player.x, self.player.y, "闪避!", "cyan", 25)
+            self.add_msg(f"闪避了 {enemy.name} 的攻击！", "cyan", "combat")
+            return
+
+        if self.player.invincible_charges > 0:
+            self.player.invincible_charges -= 1
+            self.particles.add_text(
+                self.player.x, self.player.y, "无敌!", "bright_yellow", 25
+            )
+            self.add_msg(f"无敌药水抵挡了 {enemy.name} 的攻击！", "yellow", "combat")
+            return
+
         damage = enemy.atk
         actual = self.player.take_damage(damage)
 
         self.particles.add_text(self.player.x, self.player.y, f"-{actual}", "red", 25)
         self.add_msg(f"{enemy.name} 对你造成 {actual} 伤害", "red", "combat")
+
+        if self.player.thorns > 0:
+            thorn_dmg = max(1, int(actual * self.player.thorns / 100))
+            enemy.hp = max(0, enemy.hp - thorn_dmg)
+            self.particles.add_text(enemy.x, enemy.y, f"-{thorn_dmg}", "yellow", 20)
+            self.add_msg(f"荆棘护甲反弹 {thorn_dmg} 伤害", "yellow", "combat")
+            if not enemy.is_alive():
+                self.kill_enemy(enemy)
 
         # 检查死亡
         if not self.player.is_alive():
@@ -517,6 +596,19 @@ class Game:
 
     def shop_buy(self) -> None:
         """购买商品"""
+        item = self.shop.get_selected()
+        if item and item.name == "传送卷轴" and not item.purchased:
+            for y in range(CONFIG.map_height):
+                for x in range(CONFIG.map_width):
+                    if self.map[y][x] == TileType.EXIT:
+                        self.player.x = max(
+                            1, min(CONFIG.map_width - 2, x + random.choice([-1, 0, 1]))
+                        )
+                        self.player.y = max(
+                            1, min(CONFIG.map_height - 2, y + random.choice([-1, 0, 1]))
+                        )
+                        self.update_explored()
+                        break
         success, msg = self.shop.buy_selected(self.player)
         self.add_msg(msg, "green" if success else "red", "shop")
         if success:

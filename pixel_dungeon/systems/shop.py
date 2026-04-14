@@ -35,7 +35,6 @@ class ShopItem:
 class Shop:
     """商店管理器"""
 
-    # 所有可用商品
     ALL_ITEMS = [
         ShopItem(
             "生命药水",
@@ -86,6 +85,42 @@ class Shop:
             "✦",
             lambda p: (
                 setattr(p, "max_hp", p.max_hp + 50) or setattr(p, "hp", p.hp + 50)
+            ),
+            repeatable=True,
+        ),
+        ShopItem(
+            "炸弹",
+            "下次战斗造成50点爆炸伤害",
+            45,
+            "💣",
+            lambda p: setattr(p, "bomb_charges", getattr(p, "bomb_charges", 0) + 1),
+            repeatable=True,
+        ),
+        ShopItem(
+            "传送卷轴",
+            "立即传送到出口附近",
+            80,
+            "📜",
+            lambda p: setattr(p, "teleport_ready", True),
+            repeatable=False,
+        ),
+        ShopItem(
+            "无敌药水",
+            "下一场战斗免疫伤害",
+            120,
+            "🛡",
+            lambda p: setattr(
+                p, "invincible_charges", getattr(p, "invincible_charges", 0) + 1
+            ),
+            repeatable=True,
+        ),
+        ShopItem(
+            "幸运金币",
+            "金币获取+20% 持续5层",
+            60,
+            "🍀",
+            lambda p: setattr(
+                p, "gold_bonus_floors", getattr(p, "gold_bonus_floors", 0) + 5
             ),
             repeatable=True,
         ),

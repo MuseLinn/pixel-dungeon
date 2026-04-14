@@ -171,6 +171,66 @@ GAME_ASSETS = {
         "style": "magenta",
         "style_alt": "bright_magenta",
     },
+    "enemy_bat": {
+        "sprite": [
+            "▀▓▓▓▀",
+            "█◉  ◉█",
+            " ▓▓▓▓ ",
+        ],
+        "alt_sprite": [
+            "▀░░░▀",
+            "█◉  ◉█",
+            " ░░░░ ",
+        ],
+        "name": "蝙蝠",
+        "style": "dim",
+        "style_alt": "bright_black",
+    },
+    "enemy_rat": {
+        "sprite": [
+            " ▓▓▓▓ ",
+            "▓◉  ◉▓",
+            "░▓▓▓▓░",
+        ],
+        "alt_sprite": [
+            " ░░░░ ",
+            "░◉  ◉░",
+            " ▓▓▓▓ ",
+        ],
+        "name": "巨鼠",
+        "style": "yellow",
+        "style_alt": "bright_yellow",
+    },
+    "enemy_witch": {
+        "sprite": [
+            " ▓░▓░ ",
+            "█◉  ◉█",
+            " ▓▓▓▓ ",
+        ],
+        "alt_sprite": [
+            " ░▓░▓ ",
+            "█◉  ◉█",
+            " ░░░░ ",
+        ],
+        "name": "女巫",
+        "style": "bright_magenta",
+        "style_alt": "magenta",
+    },
+    "enemy_golem": {
+        "sprite": [
+            "▓████▓",
+            "█░░░░█",
+            "██████",
+        ],
+        "alt_sprite": [
+            "▓████▓",
+            "█▓▓▓▓█",
+            "██  ██",
+        ],
+        "name": "魔像",
+        "style": "bright_black",
+        "style_alt": "white",
+    },
     "wall": {
         "sprite": [
             "████░░",
@@ -263,6 +323,19 @@ ENEMY_TYPES = [
     ("enemy_skeleton", "骷髅", 30, 12, 20, 10),
     ("enemy_orc", "兽人", 50, 10, 25, 15),
     ("enemy_shadow", "暗影", 40, 15, 30, 20),
+    ("enemy_bat", "蝙蝠", 12, 6, 8, 4),
+    ("enemy_rat", "巨鼠", 18, 4, 6, 3),
+    ("enemy_witch", "女巫", 22, 14, 18, 12),
+    ("enemy_golem", "魔像", 70, 8, 28, 12),
+]
+
+ENEMY_PREFIXES = [
+    ("", 1.0, 1.0, 1.0),
+    ("暴躁的", 0.9, 1.4, 1.1),
+    ("懒惰的", 1.3, 0.7, 0.9),
+    ("巨大的", 1.6, 1.1, 1.2),
+    ("迅捷的", 0.8, 1.2, 1.15),
+    ("精英", 1.3, 1.3, 1.5),
 ]
 
 

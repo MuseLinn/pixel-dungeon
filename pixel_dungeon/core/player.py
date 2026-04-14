@@ -21,11 +21,19 @@ class Player:
     exp: int = 0
     exp_next: int = 50
     gold: int = 0
-    crit: int = 0  # 暴击率百分比
-    lifesteal: int = 0  # 生命偷取百分比
-    regen: int = 0  # 每回合恢复
+    crit: int = 0
+    lifesteal: int = 0
+    regen: int = 0
+    dodge: int = 0
+    poison_atk: int = 0
+    double_hit: int = 0
+    thorns: int = 0
+    soul_drain: bool = False
+    crit_mult: float = 2.0
+    bomb_charges: int = 0
+    invincible_charges: int = 0
+    gold_bonus_floors: int = 0
 
-    # 动画相关
     frame: int = field(default=0, repr=False)
     char_set: str = "default"
 
