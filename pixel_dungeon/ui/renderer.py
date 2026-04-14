@@ -406,7 +406,7 @@ class Renderer:
             num = i + 1
             text.append(f"[{num}] ", style="bold yellow")
             text.append(f"{upgrade.name}\n", style="bold white")
-            text.append(f"    {upgrade.desc}\n", style="dim")
+            text.append(f"    {upgrade.description}\n", style="dim")
             text.append("\n")
 
         text.append("1-3 选择升级", style="dim")

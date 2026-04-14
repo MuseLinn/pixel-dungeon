@@ -21,11 +21,13 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
 
     logo_lines = [
         "",
-        f"    {char * 4}  {char * 4}  {char * 4}  {char * 4}  {char * 3}   {char * 3}  {char * 4}   {char * 4}  {char * 3} ",
-        f"    {char * 2}  {char * 2}  {char * 2}      {char * 2}  {char * 2}  {char * 2}  {char * 2}     {char * 2}  {char * 2}  {char * 2} {char * 2}",
-        f"    {char * 4}  {char * 2}  {char * 4}  {char * 4}  {char * 2} {char * 2} {char * 2}  {char * 3}   {char * 3}  {char * 2}  {char * 2}",
-        f"    {char * 2}  {char * 2}  {char * 2}      {char * 2}  {char * 2}  {char * 2}  {char * 2}     {char * 2}  {char * 2} {char * 2} ",
-        f"    {char * 4}  {char * 4}  {char * 4}  {char * 2}   {char * 3}   {char * 3}  {char * 4}   {char * 4}  {char * 2}  {char * 2}",
+        f"            ▄▄{char * 8}▄▄",
+        f"          ▄██{char * 8}██▄",
+        f"          ██{char * 2}░{char * 4}░{char * 2}██",
+        f"          ██{char * 2}░{char * 2}██{char * 2}░{char * 2}██",
+        f"          ██{char * 2}░{char * 2}██{char * 2}░{char * 2}██",
+        f"          ██{char * 2}░░{char * 4}░░{char * 2}██",
+        f"        ▄████{char * 8}████▄",
         "",
         "                    P I X E L   D U N G E O N",
         "                         像素地牢 v1.0",
@@ -69,10 +71,10 @@ def create_modern_title(frame: int = 0, selected_char: str = "default") -> Layou
     char_content.append("选择角色 ", style="bold")
     char_content.append("(按数字切换)\n\n", style="dim")
     chars_preview = [
-        ("1", "▓█▓", "bright_green", "勇者", "平衡型", "default"),
-        ("2", "▓◊▓", "bright_cyan", "法师", "高攻低防", "mage"),
-        ("3", "▓╪▓", "bright_red", "刺客", "暴击型", "rogue"),
-        ("4", "▓♞▓", "bright_yellow", "圣骑", "坦克型", "paladin"),
+        ("1", "▄██▄", "bright_green", "勇者", "平衡型", "default"),
+        ("2", "▲▲▲▲", "bright_cyan", "法师", "高攻低防", "mage"),
+        ("3", "▼▼▼▼", "bright_red", "刺客", "暴击型", "rogue"),
+        ("4", "▄██▄", "bright_yellow", "圣骑", "坦克型", "paladin"),
     ]
     for num, icon, color, name, desc, char_key in chars_preview:
         is_selected = char_key == selected_char
