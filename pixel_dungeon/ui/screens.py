@@ -31,56 +31,38 @@ def _glitch_text(base: str, frame: int, style: str, glitch_prob: float = 0.12) -
 
 def create_menu_transition_layout(frame: int, console, direction: str = "in") -> Layout:
     import random
-    import math
 
+    progress = frame / 12.0
     total_w = console.width
     total_h = console.height
-    cx = total_w // 2
-    cy = total_h // 2
-    max_dist = math.sqrt(cx**2 + cy**2) + 2
-    progress = frame / 15.0
 
-    lines = []
-    for y in range(total_h):
-        line = Text()
-        for x in range(total_w):
-            dist = math.sqrt((x - cx) ** 2 + (y - cy) ** 2)
-            if direction == "in":
-                show_glitch = dist > progress * max_dist
-            else:
-                show_glitch = dist < (1.0 - progress) * max_dist
-            if show_glitch:
-                gch = random.choice(
-                    [
-                        "▓",
-                        "▒",
-                        "░",
-                        "█",
-                        "▀",
-                        "▄",
-                        "▌",
-                        "▐",
-                        "▖",
-                        "▗",
-                        "▘",
-                        "▙",
-                        "▚",
-                        "▛",
-                        "▜",
-                        "▝",
-                        "▞",
-                        "▟",
-                    ]
-                )
-                line.append(
-                    gch, style=random.choice(["dim cyan", "dim blue", "dim magenta"])
-                )
-            else:
-                line.append(" ", style="black")
-        lines.append(line)
+    if direction == "in":
+        ratio = min(progress, 1.0)
+    else:
+        ratio = max(1.0 - progress, 0.0)
 
-    full_text = Text("\n").join(lines)
-    layout = Layout(full_text)
+    w = max(min(int(total_w * ratio), total_w), 8)
+    h = max(min(int(total_h * ratio), total_h), 4)
+
+    glitch_chars = ["▓", "▒", "░", "█", "▀", "▄"]
+    block = "\n".join(
+        "".join(random.choice(glitch_chars) for _ in range(w)) for _ in range(h)
+    )
+
+    panel = Panel(
+        Text(block, style="dim cyan"),
+        border_style="cyan",
+        box=box.DOUBLE,
+        width=w,
+        height=h,
+    )
+
+    layout = Layout()
+    layout.split_column(
+        Layout(ratio=1),
+        Layout(Align.center(panel, vertical="middle"), size=h),
+        Layout(ratio=1),
+    )
     return layout
 
 
@@ -233,7 +215,7 @@ def create_modern_title(
 
 def create_help_screen() -> Layout:
     text = Text()
-    text.append("游戏帮助\n\n", style="bold yellow")
+    text.append("游戏帮助\n\n", style="bold green")
     text.append("WASD / 方向键  移动和攻击\n", style="white")
     text.append("空格           等待一回合，恢复生命\n", style="white")
     text.append("B              打开商店\n", style="white")
@@ -248,8 +230,8 @@ def create_help_screen() -> Layout:
 
     panel = Panel(
         Align.center(text, vertical="middle"),
-        title="[bold yellow]帮助[/bold yellow]",
-        border_style="yellow",
+        title="[bold green]帮助[/bold green]",
+        border_style="green",
         box=box.ROUNDED,
         width=50,
         height=16,
@@ -257,9 +239,9 @@ def create_help_screen() -> Layout:
 
     layout = Layout()
     layout.split_column(
-        Layout(size=1),
+        Layout(ratio=1),
         Layout(Align.center(panel, vertical="middle"), size=16),
-        Layout(size=1),
+        Layout(ratio=1),
     )
     return layout
 
