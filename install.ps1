@@ -24,7 +24,13 @@ $BatchContent = @"
 @echo off
 set PIXEL_DUNGEON_HOME=$InstallDir
 cd /d "%PIXEL_DUNGEON_HOME%"
-python3 pixel_dungeon.py %*
+if /I "%1"=="update" (
+    python3 pixel_dungeon.py --update %*
+) else if /I "%1"=="uninstall" (
+    python3 pixel_dungeon.py --uninstall %*
+) else (
+    python3 pixel_dungeon.py %*
+)
 "@
 Set-Content -Path $Wrapper -Value $BatchContent -Encoding ASCII
 

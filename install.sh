@@ -23,7 +23,19 @@ cat > "$WRAPPER" <<'EOF'
 #!/usr/bin/env bash
 export PIXEL_DUNGEON_HOME="${PIXEL_DUNGEON_HOME:-$HOME/.local/share/pixel-dungeon}"
 cd "$PIXEL_DUNGEON_HOME"
-python3 pixel_dungeon.py "$@"
+case "$1" in
+  update)
+    shift
+    python3 pixel_dungeon.py --update "$@"
+    ;;
+  uninstall)
+    shift
+    python3 pixel_dungeon.py --uninstall "$@"
+    ;;
+  *)
+    python3 pixel_dungeon.py "$@"
+    ;;
+esac
 EOF
 chmod +x "$WRAPPER"
 

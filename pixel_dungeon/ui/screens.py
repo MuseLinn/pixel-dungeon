@@ -289,7 +289,7 @@ def create_about_screen(frame: int = 0, extra_msg: str = "") -> Layout:
     text.append(_glitch_text("关于 像素地牢", frame, "bold cyan", 0.15))
     text.append("\n\n", style="")
     text.append("版本: v1.0\n", style="white")
-    text.append("作者: 我和你\n", style="white")
+    text.append("作者: 你 & Sisyphus\n", style="white")
     text.append("引擎: Python + Rich TUI\n", style="white")
     if extra_msg:
         text.append(f"\n{extra_msg}\n", style="bright_yellow")
