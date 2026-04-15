@@ -29,6 +29,7 @@ class CONFIG:
     char_set: str = "default"  # 当前角色
     difficulty: str = "normal"
     language: str = "zh_CN"
+    theme: str = "dark"
 
     # 游戏平衡性
     enemy_scale_per_floor: float = 0.15  # 每层敌人强度增长
@@ -78,6 +79,7 @@ class CONFIG:
             "char_set": cls.char_set,
             "difficulty": cls.difficulty,
             "language": cls.language,
+            "theme": cls.theme,
         }
 
     @classmethod
@@ -96,6 +98,9 @@ class CONFIG:
                 lang = data.get("language", cls.language)
                 if lang in ("zh_CN", "en_US"):
                     cls.language = lang
+                theme = data.get("theme", cls.theme)
+                if theme in ("dark", "light"):
+                    cls.theme = theme
             except Exception:
                 pass
 
@@ -111,6 +116,7 @@ class CONFIG:
                     "animations": cls.animations,
                     "difficulty": cls.difficulty,
                     "language": cls.language,
+                    "theme": cls.theme,
                 },
                 f,
                 ensure_ascii=False,

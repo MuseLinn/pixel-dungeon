@@ -14,6 +14,7 @@ from rich.live import Live
 from ..input_handler import CrossPlatformInputHandler
 from ..utils.save_load import SaveManager
 from ..utils.i18n import _
+from ..utils.theme import get_style
 from ..utils.ota import get_version
 from ..config import CONFIG
 
@@ -67,13 +68,18 @@ def create_matrix_transition_layout(frame: int, console) -> Layout:
             if cell is None:
                 line.append(" ")
             elif cell == 0:
-                line.append(random.choice(matrix_chars), style="bright_white on green")
+                line.append(
+                    random.choice(matrix_chars),
+                    style=get_style("bright_white on green"),
+                )
             elif cell == 1:
-                line.append(random.choice(matrix_chars), style="bright_green")
+                line.append(
+                    random.choice(matrix_chars), style=get_style("bright_green")
+                )
             elif cell <= 3:
-                line.append(random.choice(matrix_chars), style="green")
+                line.append(random.choice(matrix_chars), style=get_style("green"))
             else:
-                line.append(random.choice(matrix_chars), style="dim green")
+                line.append(random.choice(matrix_chars), style=get_style("dim green"))
         lines.append(line)
 
     full_text = Text("\n").join(lines)
@@ -115,9 +121,9 @@ def create_modern_title(
                 logo_text.append(" ")
             elif random.random() < glitch_prob:
                 gch = random.choice(glitch_chars)
-                logo_text.append(gch, style="dim cyan")
+                logo_text.append(gch, style=get_style("dim cyan"))
             elif random.random() < 0.05:
-                logo_text.append(ch, style="dim")
+                logo_text.append(ch, style=get_style("dim"))
             else:
                 style = "bright_cyan" if pulse > 0.3 else "cyan"
                 logo_text.append(ch, style=style)
@@ -127,7 +133,7 @@ def create_modern_title(
         version = update_info.get("version", "")
         notice = f"🎉 {_('update_available', version)}! {_('press_u_to_update')}"
         pad = max(0, 60 - len(notice)) // 2
-        logo_text.append(" " * pad + notice + "\n", style="bold yellow")
+        logo_text.append(" " * pad + notice + "\n", style=get_style("bold yellow"))
 
     features = [
         (
@@ -153,7 +159,7 @@ def create_modern_title(
     for icon, color, title, desc in features:
         left_content.append(f"{icon} ", style=color)
         left_content.append(f"{title}", style="bold")
-        left_content.append(f"\n   {desc}\n", style="dim")
+        left_content.append(f"\n   {desc}\n", style=get_style("dim"))
 
     menu_items = [
         (_("start_game"), "start", True),
@@ -166,7 +172,7 @@ def create_modern_title(
 
     menu_content = Text()
     menu_content.append(_glitch_text(_("main_menu"), frame, "bold cyan underline"))
-    menu_content.append("\n" + "─" * 16 + "\n", style="dim")
+    menu_content.append("\n" + "─" * 16 + "\n", style=get_style("dim"))
     for i, (label, action, enabled) in enumerate(menu_items):
         is_selected = i == menu_index
         prefix = ">>> " if is_selected else "     "
@@ -189,15 +195,15 @@ def create_modern_title(
 
     controls_content = Text()
     controls_content.append(_glitch_text(_("controls"), frame, "bold cyan underline"))
-    controls_content.append("\n" + "─" * 12 + "\n", style="dim")
+    controls_content.append("\n" + "─" * 12 + "\n", style=get_style("dim"))
     for key, action in controls:
-        controls_content.append(f"{key:>8}", style="bold white on dark_blue")
-        controls_content.append(f"  {action}\n", style="white")
+        controls_content.append(f"{key:>8}", style=get_style("bold white on dark_blue"))
+        controls_content.append(f"  {action}\n", style=get_style("white"))
 
     logo_lines = logo_text.plain.count("\n") + 1
     logo_panel = Panel(
         Align.center(logo_text),
-        border_style="cyan",
+        border_style=get_style("cyan"),
         box=box.DOUBLE if frame % 2 == 0 else box.ROUNDED,
         height=logo_lines + 2,
     )
@@ -205,14 +211,14 @@ def create_modern_title(
     panel_height = 16
     left_panel = Panel(
         left_content,
-        border_style="yellow",
+        border_style=get_style("yellow"),
         box=box.ROUNDED,
         title="[yellow]✨ " + _("game_features") + "[/yellow]",
         height=panel_height,
     )
     menu_panel = Panel(
         menu_content,
-        border_style="green",
+        border_style=get_style("green"),
         box=box.ROUNDED if menu_index != 0 else box.DOUBLE,
         title="[green]🎮 " + _("main_menu") + "[/green]",
         width=28,
@@ -220,7 +226,7 @@ def create_modern_title(
     )
     controls_panel = Panel(
         controls_content,
-        border_style="cyan",
+        border_style=get_style("cyan"),
         box=box.ROUNDED,
         title="[cyan]⌨ " + _("controls") + "[/cyan]",
         width=24,
@@ -275,17 +281,17 @@ def create_help_screen(frame: int = 0) -> Layout:
     text = Text()
     text.append(_glitch_text(_("game_help"), frame, "bold green", 0.15))
     text.append("\n\n", style="")
-    text.append(_("move_attack") + "\n", style="white")
-    text.append(_("space_wait") + "\n", style="white")
-    text.append(_("b_shop") + "\n", style="white")
-    text.append(_("p_pause") + "\n", style="white")
-    text.append(_("s_save") + "\n", style="white")
-    text.append(_("r_restart") + "\n", style="white")
-    text.append(_("m_menu") + "\n", style="white")
-    text.append(_("cmd_mode") + "\n", style="white")
-    text.append(_("q_show_help") + "\n", style="white")
-    text.append(_("q_quit") + "\n", style="white")
-    text.append("\n" + _("return_menu_any"), style="dim")
+    text.append(_("move_attack") + "\n", style=get_style("white"))
+    text.append(_("space_wait") + "\n", style=get_style("white"))
+    text.append(_("b_shop") + "\n", style=get_style("white"))
+    text.append(_("p_pause") + "\n", style=get_style("white"))
+    text.append(_("s_save") + "\n", style=get_style("white"))
+    text.append(_("r_restart") + "\n", style=get_style("white"))
+    text.append(_("m_menu") + "\n", style=get_style("white"))
+    text.append(_("cmd_mode") + "\n", style=get_style("white"))
+    text.append(_("q_show_help") + "\n", style=get_style("white"))
+    text.append(_("q_quit") + "\n", style=get_style("white"))
+    text.append("\n" + _("return_menu_any"), style=get_style("dim"))
 
     pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
     border = "bright_green" if frame % 24 < 12 else "green"
@@ -312,14 +318,14 @@ def create_about_screen(frame: int = 0, extra_msg: str = "") -> Layout:
     text = Text()
     text.append(_glitch_text(_("about_pixel_dungeon"), frame, "bold cyan", 0.15))
     text.append("\n\n", style="")
-    text.append(_("version") + ": v1.1.0\n", style="white")
-    text.append(_("author") + ": muselinn & opencode\n", style="white")
-    text.append(_("github_repo") + "\n", style="dim cyan")
-    text.append(_("engine") + ": Python + Rich TUI\n", style="white")
+    text.append(_("version") + ": v1.1.0\n", style=get_style("white"))
+    text.append(_("author") + ": muselinn & opencode\n", style=get_style("white"))
+    text.append(_("github_repo") + "\n", style=get_style("dim cyan"))
+    text.append(_("engine") + ": Python + Rich TUI\n", style=get_style("white"))
     if extra_msg:
-        text.append(f"\n{extra_msg}\n", style="bright_yellow")
-    text.append("\n" + _("thanks") + "\n", style="bright_yellow")
-    text.append("\n" + _("u_check_update"), style="dim")
+        text.append(f"\n{extra_msg}\n", style=get_style("bright_yellow"))
+    text.append("\n" + _("thanks") + "\n", style=get_style("bright_yellow"))
+    text.append("\n" + _("u_check_update"), style=get_style("dim"))
 
     pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
     border = "bright_cyan" if frame % 24 < 12 else "cyan"
@@ -366,6 +372,8 @@ def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
     }
     lang_labels = {"zh_CN": "中文", "en_US": "English"}
 
+    theme_labels = {"dark": _("dark"), "light": _("light")}
+
     items = [
         (
             _("fps"),
@@ -386,6 +394,7 @@ def create_settings_screen(frame: int = 0, selected_index: int = 0) -> Layout:
         ),
         (_("difficulty"), f"[{diff_labels.get(CONFIG.difficulty, CONFIG.difficulty)}]"),
         ("语言", f"[{lang_labels.get(CONFIG.language, CONFIG.language)}]"),
+        (_("theme"), f"[{theme_labels.get(CONFIG.theme, CONFIG.theme)}]"),
         (_("return_main_menu"), ""),
     ]
 
@@ -511,7 +520,7 @@ def show_title_screen() -> tuple:
                         if key == "UP" or key == "w" or key == "W":
                             settings_index = max(0, settings_index - 1)
                         elif key == "DOWN" or key == "s" or key == "S":
-                            settings_index = min(5, settings_index + 1)
+                            settings_index = min(6, settings_index + 1)
                         elif key == "LEFT" or key == "a" or key == "A":
                             if settings_index == 0:
                                 cur = (
@@ -539,6 +548,15 @@ def show_title_screen() -> tuple:
                                 from ..utils.i18n import set_language
 
                                 set_language(CONFIG.language)
+                            elif settings_index == 5:
+                                theme_options = ["dark", "light"]
+                                cur = (
+                                    theme_options.index(CONFIG.theme)
+                                    if CONFIG.theme in theme_options
+                                    else 0
+                                )
+                                new_i = max(0, cur - 1)
+                                CONFIG.theme = theme_options[new_i]
                             CONFIG.save_settings()
                         elif key == "RIGHT" or key == "d" or key == "D":
                             if settings_index == 0:
@@ -567,6 +585,15 @@ def show_title_screen() -> tuple:
                                 from ..utils.i18n import set_language
 
                                 set_language(CONFIG.language)
+                            elif settings_index == 5:
+                                theme_options = ["dark", "light"]
+                                cur = (
+                                    theme_options.index(CONFIG.theme)
+                                    if CONFIG.theme in theme_options
+                                    else 0
+                                )
+                                new_i = min(len(theme_options) - 1, cur + 1)
+                                CONFIG.theme = theme_options[new_i]
                             CONFIG.save_settings()
                         elif key == "\r" or key == "\n":
                             if settings_index == 0:
@@ -602,6 +629,16 @@ def show_title_screen() -> tuple:
                                 set_language(CONFIG.language)
                                 CONFIG.save_settings()
                             elif settings_index == 5:
+                                theme_options = ["dark", "light"]
+                                cur = (
+                                    theme_options.index(CONFIG.theme)
+                                    if CONFIG.theme in theme_options
+                                    else 0
+                                )
+                                new_i = (cur + 1) % len(theme_options)
+                                CONFIG.theme = theme_options[new_i]
+                                CONFIG.save_settings()
+                            elif settings_index == 6:
                                 showing_settings = False
                         elif key == "\x1b" or key.lower() == "q":
                             showing_settings = False

@@ -57,11 +57,13 @@ class Player:
         self.frame = (self.frame + 1) % 16
 
     def get_render_sprite(self) -> Tuple[List[str], str]:
+        from ..utils.theme import get_style
+
         asset = get_player_asset(self.char_set)
         if self.frame < 8:
-            return asset["sprite"], asset["style"]
+            return asset["sprite"], get_style(asset["style"])
         else:
-            return asset["alt_sprite"], asset["style_alt"]
+            return asset["alt_sprite"], get_style(asset["style_alt"])
 
     def take_damage(self, damage: int) -> int:
         """受到伤害，返回实际伤害值"""

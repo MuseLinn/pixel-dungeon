@@ -47,17 +47,19 @@ class Enemy:
             self.flash -= 1
 
     def get_render_sprite(self) -> Tuple[List[str], str]:
+        from ..utils.theme import get_style
+
         if self.flash > 0:
             from ..config import CONFIG
 
             block = ["████"] * CONFIG.tile_height
-            return block, "bold white"
+            return block, get_style("bold white")
 
         asset = get_enemy_asset(self.enemy_type)
         if self.frame < 4:
-            return asset["sprite"], asset["style"]
+            return asset["sprite"], get_style(asset["style"])
         else:
-            return asset["alt_sprite"], asset["style_alt"]
+            return asset["alt_sprite"], get_style(asset["style_alt"])
 
     def take_damage(self, damage: int) -> None:
         """受到伤害"""

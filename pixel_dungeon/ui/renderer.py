@@ -14,6 +14,7 @@ from rich import box
 from ..config import CONFIG
 from ..assets import GAME_ASSETS, TileType, get_tile_asset
 from ..utils.i18n import _
+from ..utils.theme import get_style
 
 
 class Renderer:
@@ -38,7 +39,7 @@ class Renderer:
         elif light >= 0.2:
             return f"dim {base_style}"
         else:
-            return "dim black"
+            return get_style("dim black")
 
     def get_viewport(self, game) -> Tuple[int, int, int, int]:
         tile_w = CONFIG.tile_width
@@ -81,7 +82,7 @@ class Renderer:
             return [row for row in sprite], style
         else:
             void = ["░" * CONFIG.tile_width] * CONFIG.tile_height
-            return void, "dim black"
+            return void, get_style("dim black")
 
     def create_map_panel(self, game) -> Panel:
         tile_w = CONFIG.tile_width
@@ -207,7 +208,7 @@ class Renderer:
                         if mid_col < len(row):
                             row[mid_col] = p.char
                         sprite_rows[mid_row] = "".join(row)
-                        style = self.get_light_style(p.style, light)
+                        style = self.get_light_style(get_style(p.style), light)
 
                     t = text_map.get((lx, ly))
                     if t:
@@ -217,7 +218,9 @@ class Renderer:
                             if i < len(row):
                                 row[i] = ch
                         sprite_rows[0] = "".join(row)
-                        style = self.get_light_style(t.get_alpha_style(), light)
+                        style = self.get_light_style(
+                            get_style(t.get_alpha_style()), light
+                        )
 
                 for i in range(tile_h):
                     row_texts[i].append(sprite_rows[i], style=style)
@@ -240,7 +243,7 @@ class Renderer:
         return Panel(
             map_text,
             title=f"[bold cyan]{_('floor_transition', game.floor).strip()}[/bold cyan]",
-            border_style="cyan",
+            border_style=get_style("cyan"),
             box=box.ROUNDED,
             padding=(0, 0),
             height=main_h,
@@ -340,7 +343,7 @@ class Renderer:
         return Panel(
             mm_text,
             title=f"[bold cyan]{_('map')}[/bold cyan]",
-            border_style="cyan",
+            border_style=get_style("cyan"),
             box=box.ROUNDED,
             padding=(0, 0),
             height=12,
@@ -351,30 +354,32 @@ class Renderer:
 
         text = Text()
         sprite, _ = p.get_render_sprite()
-        text.append(f"{sprite[0]} ", style="bright_green")
-        text.append(f"Lv.{p.level}{_('level_suffix')}\n", style="bold yellow")
+        text.append(f"{sprite[0]} ", style=get_style("bright_green"))
+        text.append(
+            f"Lv.{p.level}{_('level_suffix')}\n", style=get_style("bold yellow")
+        )
 
         hp_bar, hp_filled = self.get_bar(p.hp, p.max_hp, 14)
-        text.append("生命 ", style="red")
+        text.append("生命 ", style=get_style("red"))
         text.append(f"{p.hp}/{p.max_hp} ")
-        text.append(hp_bar[:hp_filled], style="red")
+        text.append(hp_bar[:hp_filled], style=get_style("red"))
         text.append(hp_bar[hp_filled:] + "\n")
 
         exp_bar, exp_filled = self.get_bar(p.exp, p.exp_next, 14)
-        text.append("经验 ", style="cyan")
+        text.append("经验 ", style=get_style("cyan"))
         text.append(f"{p.exp}/{p.exp_next} ")
-        text.append(exp_bar[:exp_filled], style="cyan")
+        text.append(exp_bar[:exp_filled], style=get_style("cyan"))
         text.append(exp_bar[exp_filled:] + "\n")
 
         text.append(
             f"攻{p.atk} 防{p.defense} 暴{p.crit}% 吸{p.lifesteal}% 恢{p.regen} 金{p.gold}G\n",
-            style="white",
+            style=get_style("white"),
         )
 
         return Panel(
             text,
             title="[bold green]状态[/bold green]",
-            border_style="green",
+            border_style=get_style("green"),
             box=box.ROUNDED,
             padding=(0, 1),
             height=6,
@@ -399,12 +404,12 @@ class Renderer:
             else:
                 prefix = "• "
 
-            log_text.append(f"{prefix}{msg}\n", style=style)
+            log_text.append(f"{prefix}{msg}\n", style=get_style(style))
 
         return Panel(
             log_text,
             title="[bold yellow]日志[/bold yellow]",
-            border_style="yellow",
+            border_style=get_style("yellow"),
             box=box.ROUNDED,
             height=height,
         )
@@ -438,7 +443,10 @@ class Renderer:
         )
         table.add_row(
             cell("▓", "bright_black", _("wall")),
-            Text("WASD移动 B商店 P暂停 S存档 R重启 M菜单 ?帮助 /命令", style="dim"),
+            Text(
+                "WASD移动 B商店 P暂停 S存档 R重启 M菜单 ?帮助 /命令",
+                style=get_style("dim"),
+            ),
             Text(),
             Text(),
             Text(),
@@ -447,7 +455,7 @@ class Renderer:
 
         return Panel(
             table,
-            border_style="dim",
+            border_style=get_style("dim"),
             box=box.ROUNDED,
             padding=(0, 1),
             height=5,
@@ -455,19 +463,19 @@ class Renderer:
 
     def create_help_panel(self) -> Panel:
         text = Text()
-        text.append(f"{_('game_help')}\n\n", style="bold yellow")
-        text.append(f"{_('move_attack')}\n", style="white")
-        text.append(f"{_('space_wait')}\n", style="white")
-        text.append(f"{_('b_shop')}\n", style="white")
-        text.append(f"{_('p_pause')}\n", style="white")
-        text.append(f"{_('cmd_mode')}\n", style="white")
-        text.append(f"{_('q_show_help')}\n", style="white")
-        text.append(f"{_('q_quit')}\n", style="white")
+        text.append(f"{_('game_help')}\n\n", style=get_style("bold yellow"))
+        text.append(f"{_('move_attack')}\n", style=get_style("white"))
+        text.append(f"{_('space_wait')}\n", style=get_style("white"))
+        text.append(f"{_('b_shop')}\n", style=get_style("white"))
+        text.append(f"{_('p_pause')}\n", style=get_style("white"))
+        text.append(f"{_('cmd_mode')}\n", style=get_style("white"))
+        text.append(f"{_('q_show_help')}\n", style=get_style("white"))
+        text.append(f"{_('q_quit')}\n", style=get_style("white"))
 
         return Panel(
             text,
             title=f"[bold yellow]{_('help')}[/bold yellow]",
-            border_style="yellow",
+            border_style=get_style("yellow"),
             box=box.ROUNDED,
             height=12,
         )
@@ -508,10 +516,10 @@ class Renderer:
             text.append(f"[{num}] ", style=f"bold {panel_main}")
             text.append(self._glitch_text(upgrade.name, frame, f"bold {color}", 0.08))
             text.append("\n", style="")
-            text.append(f"    {upgrade.description}\n", style="dim")
+            text.append(f"    {upgrade.description}\n", style=get_style("dim"))
             text.append("\n", style="")
 
-        text.append(_("choose_upgrade"), style="dim")
+        text.append(_("choose_upgrade"), style=get_style("dim"))
 
         pulse_box = box.DOUBLE if frame % 20 < 10 else box.ROUNDED
         border = panel_main if frame % 24 < 12 else panel_dim
@@ -527,26 +535,27 @@ class Renderer:
 
     def create_shop_panel(self, game) -> Panel:
         text = Text()
-        text.append(f"{_('shop')}\n\n", style="bold yellow")
+        text.append(f"{_('shop')}\n\n", style=get_style("bold yellow"))
 
         items = game.shop.items
         for i, item in enumerate(items):
             num = i + 1
             sel_marker = "▶ " if i == game.shop.selected_index else "  "
-            text.append(f"{sel_marker}[{num}] ", style="bold yellow")
-            text.append(f"{item.name} ", style="bold white")
-            text.append(f"({item.price}G)\n", style="yellow")
-            text.append(f"    {item.description}\n", style="dim")
+            text.append(f"{sel_marker}[{num}] ", style=get_style("bold yellow"))
+            text.append(f"{item.name} ", style=get_style("bold white"))
+            text.append(f"({item.price}G)\n", style=get_style("yellow"))
+            text.append(f"    {item.description}\n", style=get_style("dim"))
 
         text.append("\n")
         text.append(
-            f"{_('ws_switch')}  {_('enter_buy')}  {_('esc_close')}", style="dim"
+            f"{_('ws_switch')}  {_('enter_buy')}  {_('esc_close')}",
+            style=get_style("dim"),
         )
 
         return Panel(
             text,
             title=f"[bold yellow]{_('shop')}[/bold yellow]",
-            border_style="yellow",
+            border_style=get_style("yellow"),
             box=box.ROUNDED,
             height=20,
         )
@@ -556,24 +565,24 @@ class Renderer:
 
         text = Text()
         text.append("\n")
-        text.append(f"💀 {_('game_over')} 💀\n\n", style="bold red")
-        text.append(f"{_('reached_floor', game.floor)}\n", style="yellow")
-        text.append(f"{_('final_level')}: {p.level}\n", style="cyan")
+        text.append(f"💀 {_('game_over')} 💀\n\n", style=get_style("bold red"))
+        text.append(f"{_('reached_floor', game.floor)}\n", style=get_style("yellow"))
+        text.append(f"{_('final_level')}: {p.level}\n", style=get_style("cyan"))
         text.append(
             f"{_('enemies_killed')}: {game.stats.get('enemies_killed', 0)}\n",
-            style="red",
+            style=get_style("red"),
         )
         text.append(
             f"{_('gold_earned')}: {game.stats.get('total_gold_earned', 0)}G\n",
-            style="yellow",
+            style=get_style("yellow"),
         )
         text.append("\n")
-        text.append(f"{_('r_restart_m_menu_q_quit')}", style="dim")
+        text.append(f"{_('r_restart_m_menu_q_quit')}", style=get_style("dim"))
 
         return Panel(
             Align.center(text, vertical="middle"),
             title=f"[bold red]{_('game_over')}[/bold red]",
-            border_style="red",
+            border_style=get_style("red"),
             box=box.DOUBLE,
             width=40,
             height=13,
@@ -600,11 +609,11 @@ class Renderer:
         text = Text()
         text.append(self._glitch_text(_("game_paused"), frame, "bold yellow", 0.18))
         text.append("\n\n", style="")
-        text.append(f"{_('p_resume')}\n", style="white")
-        text.append(f"{_('s_save_game')}\n", style="white")
-        text.append(f"{_('r_restart_game')}\n", style="white")
-        text.append(f"{_('m_return_menu')}\n", style="white")
-        text.append(f"{_('q_quit_game')}\n", style="white")
+        text.append(f"{_('p_resume')}\n", style=get_style("white"))
+        text.append(f"{_('s_save_game')}\n", style=get_style("white"))
+        text.append(f"{_('r_restart_game')}\n", style=get_style("white"))
+        text.append(f"{_('m_return_menu')}\n", style=get_style("white"))
+        text.append(f"{_('q_quit_game')}\n", style=get_style("white"))
 
         pulse_box = box.DOUBLE if frame % 30 < 15 else box.ROUNDED
         border = "bright_yellow" if frame % 40 < 20 else "yellow"
@@ -632,14 +641,14 @@ class Renderer:
         line = Text()
         for ch in base:
             if random.random() < glitch_prob:
-                line.append(random.choice(glitch_chars), style="dim cyan")
+                line.append(random.choice(glitch_chars), style=get_style("dim cyan"))
             else:
                 style = "bright_cyan" if frame % 6 < 3 else "cyan"
                 line.append(ch, style=style)
 
         return Panel(
             Align.center(line, vertical="middle"),
-            border_style="cyan",
+            border_style=get_style("cyan"),
             box=box.DOUBLE if frame % 4 < 2 else box.ROUNDED,
             width=max(len(base) + 6, 20),
             height=5,
@@ -719,20 +728,20 @@ class Renderer:
         layout = self.render_game(game)
 
         text = Text()
-        text.append(f"{_('cmd_mode_overlay')}  ", style="bold yellow")
-        text.append("/", style="dim")
-        text.append(cmd_buffer, style="white")
+        text.append(f"{_('cmd_mode_overlay')}  ", style=get_style("bold yellow"))
+        text.append("/", style=get_style("dim"))
+        text.append(cmd_buffer, style=get_style("white"))
 
         if suggestions:
-            text.append("  ", style="dim")
+            text.append("  ", style=get_style("dim"))
             for i, sugg in enumerate(suggestions[:3]):
                 if i > 0:
-                    text.append(" ", style="dim")
-                text.append(f"/{sugg}", style="dim cyan")
+                    text.append(" ", style=get_style("dim"))
+                text.append(f"/{sugg}", style=get_style("dim cyan"))
 
         overlay = Panel(
             text,
-            border_style="yellow",
+            border_style=get_style("yellow"),
             box=box.ROUNDED,
             height=3,
         )

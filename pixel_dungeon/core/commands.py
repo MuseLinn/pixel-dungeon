@@ -26,6 +26,7 @@ class CommandHandler:
         "god": _("cmd_god_desc"),
         "killall": _("cmd_killall_desc"),
         "next": _("cmd_next_desc"),
+        "theme": _("cmd_theme_desc"),
     }
 
     def __init__(self, game):
@@ -66,6 +67,7 @@ class CommandHandler:
             "god": self.cmd_god,
             "killall": self.cmd_killall,
             "next": self.cmd_next,
+            "theme": self.cmd_theme,
         }
 
         if cmd in handlers:
@@ -143,7 +145,8 @@ class CommandHandler:
             f"  {_('map')}: {CONFIG.map_width}x{CONFIG.map_height}\n"
             f"  {_('lighting')}: {(_('on') if CONFIG.lighting else _('off'))}\n"
             f"  {_('particles')}: {(_('on') if CONFIG.particles else _('off'))}\n"
-            f"  {_('character')}: {CONFIG.char_set}"
+            f"  {_('character')}: {CONFIG.char_set}\n"
+            f"  {_('theme')}: {CONFIG.theme}"
         )
 
     def cmd_shop(self, args):
@@ -197,3 +200,11 @@ class CommandHandler:
     def cmd_next(self, args):
         self.game.next_floor()
         return "🚪 " + _("next_floor_cmd")
+
+    def cmd_theme(self, args):
+        theme_map = {"dark": "dark", "light": "light"}
+        if args and args[0].lower() in theme_map:
+            CONFIG.theme = theme_map[args[0].lower()]
+            CONFIG.save_settings()
+            return f"🎨 {_('theme_set', CONFIG.theme)}"
+        return f"🎨 {_('theme')}: {CONFIG.theme}\n" + _("theme_usage", "dark/light")
