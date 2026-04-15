@@ -134,6 +134,8 @@ class SaveManager:
                             "floor": data.get("floor", 1),
                             "timestamp": data.get("timestamp", _("unknown")),
                             "version": data.get("version", "1.0"),
+                            "game_stats": data.get("game_stats", {}),
+                            "player_data": data.get("player_data", {}),
                         }
                     )
                 except:

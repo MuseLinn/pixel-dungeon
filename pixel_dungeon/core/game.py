@@ -76,6 +76,7 @@ class Game:
             "close_call_wins": 0,
             "max_crit_damage": 0,
             "play_time": 0,
+            "deaths": 0,
         }
 
         # 时间记录
@@ -628,6 +629,7 @@ class Game:
     def game_over(self) -> None:
         """游戏结束"""
         self.state = "game_over"
+        self.stats["deaths"] += 1
         self.add_msg(_("you_died_game_over"), "red", "system")
 
     def add_msg(

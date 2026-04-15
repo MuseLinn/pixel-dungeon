@@ -353,7 +353,7 @@ class Renderer:
         p = game.player
 
         text = Text()
-        sprite, _ = p.get_render_sprite()
+        sprite, _style = p.get_render_sprite()
         text.append(f"{sprite[0]} ", style=get_style("bright_green"))
         text.append(
             f"Lv.{p.level}{_('level_suffix')}\n", style=get_style("bold yellow")
@@ -416,7 +416,7 @@ class Renderer:
 
     def create_legend_panel(self) -> Panel:
         table = Table(show_header=False, box=None, padding=(0, 2), expand=False)
-        for _ in range(6):
+        for _i in range(6):
             table.add_column()
 
         def cell(icon: str, style: str, name: str) -> Text:

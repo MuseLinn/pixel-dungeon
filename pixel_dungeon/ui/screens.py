@@ -184,10 +184,17 @@ def create_modern_title(
         menu_content.append(
             f"{label}\n", style=name_style if is_selected else desc_style
         )
+    menu_content.append("\n" + "─" * 16 + "\n", style=get_style("dim"))
+    menu_content.append("WASD/↑↓ ", style=get_style("bold white on dark_blue"))
+    menu_content.append(f"{_('select')}  ", style=get_style("white"))
+    menu_content.append("Enter ", style=get_style("bold white on dark_blue"))
+    menu_content.append(f"{_('confirm')}  ", style=get_style("white"))
+    menu_content.append("Q ", style=get_style("bold white on dark_blue"))
+    menu_content.append(f"{_('quit')}\n", style=get_style("white"))
 
     saves_content = Text()
     saves_content.append(_glitch_text(_("save_slots"), frame, "bold cyan underline"))
-    saves_content.append("\n" + "─" * 12 + "\n", style=get_style("dim"))
+    saves_content.append("\n" + "─" * 14 + "\n", style=get_style("dim"))
     for save in saves:
         slot = save.get("slot", 0)
         num = slot + 1
@@ -202,9 +209,24 @@ def create_modern_title(
             ts = save.get("timestamp", _("unknown"))
             if len(ts) > 10:
                 ts = ts[:10]
+            stats = save.get("game_stats", {})
+            kills = stats.get("enemies_killed", 0)
+            deaths = stats.get("deaths", 0)
+            play_sec = stats.get("play_time", 0)
+            if play_sec < 60:
+                pt = f"{play_sec}s"
+            elif play_sec < 3600:
+                pt = f"{play_sec // 60}m"
+            else:
+                pt = f"{play_sec // 3600}h {(play_sec % 3600) // 60}m"
             saves_content.append(f" [{num}] ", style=get_style("bold cyan"))
-            saves_content.append(f"{_('floor')} {floor}\n", style=get_style("white"))
-            saves_content.append(f"      {ts}\n", style=get_style("dim"))
+            saves_content.append(
+                f"{_('floor_label', floor)} {ts}\n", style=get_style("white")
+            )
+            saves_content.append(
+                f"      {_('kills')}:{kills} {_('deaths')}:{deaths} {_('play_time')}:{pt}\n",
+                style=get_style("dim"),
+            )
 
     logo_lines = logo_text.plain.count("\n") + 1
     logo_panel = Panel(
@@ -232,7 +254,7 @@ def create_modern_title(
         border_style=get_style("cyan"),
         box=box.ROUNDED,
         title="[cyan]💾 " + _("save_slots") + "[/cyan]",
-        width=24,
+        width=30,
     )
 
     info_layout = Layout()

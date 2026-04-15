@@ -325,6 +325,10 @@ _TRANSLATIONS = {
         "theme_set": "主题设置为 {}",
         "save_slots": "存档",
         "empty_slot": "空槽",
+        "floor_label": "第 {} 层",
+        "kills": "击杀",
+        "deaths": "死亡",
+        "play_time": "时长",
         # OTA / Install
         "latest_version": "当前已是最新版本 {}",
         "updated_restart": "已更新到最新版本，请重启游戏",
@@ -692,6 +696,10 @@ _TRANSLATIONS = {
         "theme_set": "Theme set to {}",
         "save_slots": "Saves",
         "empty_slot": "Empty",
+        "floor_label": "Floor {}",
+        "kills": "Kills",
+        "deaths": "Deaths",
+        "play_time": "Time",
         # OTA / Install
         "latest_version": "Already up-to-date (v{})",
         "updated_restart": "Updated to latest. Please restart.",
