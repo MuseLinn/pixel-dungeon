@@ -1,30 +1,39 @@
 #!/usr/bin/env bash
 set -e
 
-REPO_URL="https://github.com/muselinn/pixel-dungeon.git"
+REPO_URL_HTTPS="https://github.com/muselinn/pixel-dungeon.git"
+REPO_URL_SSH="git@github.com:muselinn/pixel-dungeon.git"
 INSTALL_DIR="${PIXEL_DUNGEON_HOME:-$HOME/.local/share/pixel-dungeon}"
 BIN_DIR="$HOME/.local/bin"
 WRAPPER="$BIN_DIR/pixel-dungeon"
 
-cat <<'BANNER'
-    ___ _         _   ___
-   | _ (_)_ _____| | |   \ _  _ _ _  __ _ ___ ___ _ _
-   |  _/ \ \ / -_) | | |) | || | ' \/ _` / -_) _ \ ' \
-   |_| |_/_/_\___|_| |___/ \_,_|_||_\__, \___\___/_||_|
-                                      |___/
-              P I X E L   D U N G E O N
-                   像素地牢 v1.0
+clone_repo() {
+    mkdir -p "$(dirname "$INSTALL_DIR")"
+    git clone "$1" "$INSTALL_DIR"
+}
 
-BANNER
+echo "==> 安装 Pixel Dungeon 到 $INSTALL_DIR"
 
-echo "==> 检查环境..."
-
-PYTHON_CMD=""
-for cmd in python3 python; do
-    if command -v "$cmd" >/dev/null 2>&1; then
-        PYTHON_CMD="$cmd"
-        break
+if [ -d "$INSTALL_DIR" ]; then
+    echo "==> 目录已存在，执行更新 (git pull)..."
+    cd "$INSTALL_DIR"
+    git pull origin master || { echo "错误: git pull 失败"; exit 1; }
+else
+    echo "==> 尝试 HTTPS 克隆..."
+    if ! clone_repo "$REPO_URL_HTTPS"; then
+        echo "==> HTTPS 失败，尝试 SSH 克隆..."
+        if ! clone_repo "$REPO_URL_SSH"; then
+            echo "错误: git clone 失败。HTTPS 和 SSH 均不可用。"
+            echo "建议: 1) 检查网络连接; 2) 手动下载 ZIP 解压到 $INSTALL_DIR"
+            exit 1
+        fi
     fi
+fi
+
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "错误: 安装目录不存在，克隆似乎失败了"
+    exit 1
+fi
 done
 
 if [ -z "$PYTHON_CMD" ]; then

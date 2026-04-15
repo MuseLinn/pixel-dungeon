@@ -71,10 +71,19 @@ try {
     }
 }
 
-$RepoUrl = "https://github.com/muselinn/pixel-dungeon.git"
+$RepoUrlHttps = "https://github.com/muselinn/pixel-dungeon.git"
+$RepoUrlSsh = "git@github.com:muselinn/pixel-dungeon.git"
 $InstallDir = if ($env:PIXEL_DUNGEON_HOME) { $env:PIXEL_DUNGEON_HOME } else { Join-Path $env:LOCALAPPDATA "pixel-dungeon" }
 $BinDir = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps"
 $Wrapper = Join-Path $BinDir "pixel-dungeon.bat"
+
+function Clone-Repo {
+    param([string]$Url)
+    $Parent = Split-Path $InstallDir -Parent
+    if (!(Test-Path $Parent)) { New-Item -ItemType Directory -Path $Parent -Force | Out-Null }
+    git clone $Url $InstallDir
+    return $LASTEXITCODE
+}
 
 Write-Host "==> 安装 Pixel Dungeon 到 $InstallDir"
 
@@ -87,12 +96,15 @@ if (Test-Path $InstallDir) {
         exit 1
     }
 } else {
-    $Parent = Split-Path $InstallDir -Parent
-    if (!(Test-Path $Parent)) { New-Item -ItemType Directory -Path $Parent -Force | Out-Null }
-    git clone $RepoUrl $InstallDir
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "错误: git clone 失败。如果提示 SSL/TLS 错误，请尝试运行: git config --global http.sslBackend openssl"
-        exit 1
+    Write-Host "==> 尝试 HTTPS 克隆..."
+    $cloneCode = Clone-Repo $RepoUrlHttps
+    if ($cloneCode -ne 0) {
+        Write-Host "==> HTTPS 失败，尝试 SSH 克隆..."
+        $cloneCode = Clone-Repo $RepoUrlSsh
+        if ($cloneCode -ne 0) {
+            Write-Error "错误: git clone 失败。HTTPS 和 SSH 均不可用。`n建议: 1) 运行 'git config --global http.sslBackend openssl' 后重试; 2) 或手动下载 ZIP 解压到 $InstallDir"
+            exit 1
+        }
     }
 }
 
