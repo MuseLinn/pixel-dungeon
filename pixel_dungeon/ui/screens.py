@@ -236,11 +236,13 @@ def create_modern_title(
         height=logo_lines + 2,
     )
 
+    panel_height = 16
     left_panel = Panel(
         Align.center(left_content, vertical="middle"),
         border_style=get_style("yellow"),
         box=box.ROUNDED,
         title="[yellow]✨ " + _("game_features") + "[/yellow]",
+        height=panel_height,
     )
     menu_panel = Panel(
         Align.center(menu_content, vertical="middle"),
@@ -248,13 +250,15 @@ def create_modern_title(
         box=box.ROUNDED if menu_index != 0 else box.DOUBLE,
         title="[green]🎮 " + _("main_menu") + "[/green]",
         width=28,
+        height=panel_height,
     )
     saves_panel = Panel(
-        saves_content,
+        Align.center(saves_content, vertical="middle"),
         border_style=get_style("cyan"),
         box=box.ROUNDED,
         title="[cyan]💾 " + _("save_slots") + "[/cyan]",
         width=30,
+        height=panel_height,
     )
 
     info_layout = Layout()
@@ -264,13 +268,22 @@ def create_modern_title(
         Layout(saves_panel, ratio=2),
     )
 
+    total_content_h = logo_lines + 2 + panel_height
+
     content_layout = Layout()
     content_layout.split_column(
         Layout(logo_panel, size=logo_lines + 2),
-        Layout(info_layout, ratio=1),
+        Layout(info_layout, size=panel_height),
     )
 
-    return content_layout
+    main_layout = Layout()
+    main_layout.split_column(
+        Layout(Text(" "), ratio=1),
+        Layout(content_layout, size=total_content_h),
+        Layout(Text(" "), ratio=1),
+    )
+
+    return main_layout
 
 
 def create_help_screen(frame: int = 0) -> Layout:
