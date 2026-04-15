@@ -74,7 +74,7 @@ def main():
         return
 
     while True:
-        action, selected_char = show_title_screen()
+        action, selected_char, continue_slot = show_title_screen()
 
         if action == "quit":
             print(_("quit_msg"))
@@ -90,7 +90,7 @@ def main():
         elif action == "continue":
             game = Game()
             game.init_game(char_set=selected_char)
-            if game.load_game(0):
+            if game.load_game(continue_slot):
                 px, py = game.player.x, game.player.y
                 game.init_map()
                 game.player.x, game.player.y = px, py

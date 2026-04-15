@@ -91,10 +91,16 @@ def create_matrix_transition_layout(frame: int, console) -> Layout:
 def create_modern_title(
     frame: int = 0,
     menu_index: int = 0,
-    has_save: bool = False,
+    menu_items: list = None,
+    saves: list = None,
     update_info: dict = None,
 ) -> Layout:
     import random
+
+    if menu_items is None:
+        menu_items = []
+    if saves is None:
+        saves = []
 
     base_logo = [
         "",
@@ -162,15 +168,6 @@ def create_modern_title(
         left_content.append(f"{title}", style="bold")
         left_content.append(f"\n   {desc}\n", style=get_style("dim"))
 
-    menu_items = [
-        (_("start_game"), "start", True),
-        (_("continue_game"), "continue", has_save),
-        (_("settings"), "settings", True),
-        (_("help"), "help", True),
-        (_("about"), "about", True),
-        (_("quit_game"), "quit", True),
-    ]
-
     menu_content = Text()
     menu_content.append(_glitch_text(_("main_menu"), frame, "bold cyan underline"))
     menu_content.append("\n" + "─" * 16 + "\n", style=get_style("dim"))
@@ -188,18 +185,26 @@ def create_modern_title(
             f"{label}\n", style=name_style if is_selected else desc_style
         )
 
-    controls = [
-        ("WASD/↑↓", _("select")),
-        ("Enter", _("confirm")),
-        ("Q", _("quit")),
-    ]
-
-    controls_content = Text()
-    controls_content.append(_glitch_text(_("controls"), frame, "bold cyan underline"))
-    controls_content.append("\n" + "─" * 12 + "\n", style=get_style("dim"))
-    for key, action in controls:
-        controls_content.append(f"{key:>8}", style=get_style("bold white on dark_blue"))
-        controls_content.append(f"  {action}\n", style=get_style("white"))
+    saves_content = Text()
+    saves_content.append(_glitch_text(_("save_slots"), frame, "bold cyan underline"))
+    saves_content.append("\n" + "─" * 12 + "\n", style=get_style("dim"))
+    for save in saves:
+        slot = save.get("slot", 0)
+        num = slot + 1
+        if save.get("empty"):
+            saves_content.append(f" [{num}] ", style=get_style("dim"))
+            saves_content.append(f"{_('empty_slot')}\n", style=get_style("dim"))
+        elif save.get("error"):
+            saves_content.append(f" [{num}] ", style=get_style("red"))
+            saves_content.append(f"{_('load_failed')}\n", style=get_style("red"))
+        else:
+            floor = save.get("floor", 1)
+            ts = save.get("timestamp", _("unknown"))
+            if len(ts) > 10:
+                ts = ts[:10]
+            saves_content.append(f" [{num}] ", style=get_style("bold cyan"))
+            saves_content.append(f"{_('floor')} {floor}\n", style=get_style("white"))
+            saves_content.append(f"      {ts}\n", style=get_style("dim"))
 
     logo_lines = logo_text.plain.count("\n") + 1
     logo_panel = Panel(
@@ -222,12 +227,19 @@ def create_modern_title(
         title="[green]🎮 " + _("main_menu") + "[/green]",
         width=28,
     )
-    controls_panel = Panel(
-        Align.center(controls_content, vertical="middle"),
+    saves_panel = Panel(
+        saves_content,
         border_style=get_style("cyan"),
         box=box.ROUNDED,
-        title="[cyan]⌨ " + _("controls") + "[/cyan]",
+        title="[cyan]💾 " + _("save_slots") + "[/cyan]",
         width=24,
+    )
+
+    info_layout = Layout()
+    info_layout.split_row(
+        Layout(left_panel, ratio=3),
+        Layout(menu_panel, ratio=2),
+        Layout(saves_panel, ratio=2),
     )
 
     info_layout = Layout()
@@ -449,7 +461,8 @@ def show_title_screen() -> tuple:
     input_handler.start()
 
     save_manager = SaveManager()
-    has_save = save_manager.exists(0)
+    saves = save_manager.list_saves()
+    has_save = any(not s.get("empty") and not s.get("error") for s in saves)
 
     menu_items = [
         (_("start_game"), "start", True),
@@ -670,7 +683,9 @@ def show_title_screen() -> tuple:
                     time.sleep(0.05)
                     continue
 
-                layout = create_modern_title(frame, menu_index, has_save, update_info)
+                layout = create_modern_title(
+                    frame, menu_index, menu_items, saves, update_info
+                )
                 live.update(layout)
 
                 key = input_handler.get_key()
@@ -684,12 +699,27 @@ def show_title_screen() -> tuple:
                         update_info["available"] = False
                         live.update(
                             create_modern_title(
-                                frame, menu_index, has_save, {"available": False}
+                                frame,
+                                menu_index,
+                                menu_items,
+                                saves,
+                                {"available": False},
                             )
                         )
                         time.sleep(0.3)
                         live.update(create_about_screen(frame, extra_msg=msg))
                         time.sleep(1.5)
+                    elif key in ("1", "2", "3"):
+                        slot_idx = int(key) - 1
+                        if slot_idx < len(saves) and not saves[slot_idx].get("empty"):
+                            for f in range(24):
+                                live.update(
+                                    create_matrix_transition_layout(
+                                        frame=f, console=live.console
+                                    )
+                                )
+                                time.sleep(0.04)
+                            return ("continue", selected_char, slot_idx)
                     elif key == "UP" or key == "w" or key == "W":
                         new_index = menu_index - 1
                         while new_index >= 0:
@@ -715,7 +745,7 @@ def show_title_screen() -> tuple:
                         elif action == "settings":
                             showing_settings = True
                             settings_index = 0
-                        elif action in ("start", "continue"):
+                        elif action == "start":
                             for f in range(24):
                                 live.update(
                                     create_matrix_transition_layout(
@@ -724,14 +754,29 @@ def show_title_screen() -> tuple:
                                     )
                                 )
                                 time.sleep(0.04)
-                            return (action, selected_char)
+                            return (action, selected_char, 0)
+                        elif action == "continue":
+                            for f in range(24):
+                                live.update(
+                                    create_matrix_transition_layout(
+                                        frame=f,
+                                        console=live.console,
+                                    )
+                                )
+                                time.sleep(0.04)
+                            first_slot = 0
+                            for s in saves:
+                                if not s.get("empty") and not s.get("error"):
+                                    first_slot = s.get("slot", 0)
+                                    break
+                            return (action, selected_char, first_slot)
                         else:
-                            return (action, selected_char)
+                            return (action, selected_char, 0)
                     elif key == "\x03" or key.lower() == "q":
-                        return ("quit", selected_char)
+                        return ("quit", selected_char, 0)
 
                 time.sleep(0.05)
     except KeyboardInterrupt:
-        return ("quit", selected_char)
+        return ("quit", selected_char, 0)
     finally:
         input_handler.stop()

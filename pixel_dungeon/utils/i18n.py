@@ -323,6 +323,8 @@ _TRANSLATIONS = {
         "dark": "深色",
         "light": "浅色",
         "theme_set": "主题设置为 {}",
+        "save_slots": "存档",
+        "empty_slot": "空槽",
         # OTA / Install
         "latest_version": "当前已是最新版本 {}",
         "updated_restart": "已更新到最新版本，请重启游戏",
@@ -686,6 +688,8 @@ _TRANSLATIONS = {
         "dark": "Dark",
         "light": "Light",
         "theme_set": "Theme set to {}",
+        "save_slots": "Saves",
+        "empty_slot": "Empty",
         # OTA / Install
         "latest_version": "Already up-to-date (v{})",
         "updated_restart": "Updated to latest. Please restart.",
