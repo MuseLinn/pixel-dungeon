@@ -251,6 +251,8 @@ _TRANSLATIONS = {
         "ach_speed_runner": "速通者",
         "ach_speed_runner_desc": "在10分钟内到达第10层",
         "hidden_achievement": "隐藏成就",
+        "achievements": "成就",
+        "achievements_unlocked": "已解锁成就: {}/{}",
         # Commands
         "cmd_help_desc": "显示帮助信息",
         "cmd_help_short_desc": "显示帮助信息(简写)",
@@ -612,6 +614,8 @@ _TRANSLATIONS = {
         "ach_speed_runner": "Speed Runner",
         "ach_speed_runner_desc": "Reach Floor 10 in < 10 min",
         "hidden_achievement": "Hidden Achievement",
+        "achievements": "Achievements",
+        "achievements_unlocked": "Unlocked: {}/{}",
         # Commands
         "cmd_help_desc": "Show help",
         "cmd_help_short_desc": "Show help (short)",

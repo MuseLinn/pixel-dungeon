@@ -16,6 +16,7 @@ from ..utils.save_load import SaveManager
 from ..utils.i18n import _
 from ..utils.theme import get_style
 from ..utils.ota import get_version
+from ..systems.achievements import AchievementManager
 from ..config import CONFIG
 
 
@@ -208,29 +209,25 @@ def create_modern_title(
         height=logo_lines + 2,
     )
 
-    panel_height = 16
     left_panel = Panel(
-        left_content,
+        Align.center(left_content, vertical="middle"),
         border_style=get_style("yellow"),
         box=box.ROUNDED,
         title="[yellow]✨ " + _("game_features") + "[/yellow]",
-        height=panel_height,
     )
     menu_panel = Panel(
-        menu_content,
+        Align.center(menu_content, vertical="middle"),
         border_style=get_style("green"),
         box=box.ROUNDED if menu_index != 0 else box.DOUBLE,
         title="[green]🎮 " + _("main_menu") + "[/green]",
         width=28,
-        height=panel_height,
     )
     controls_panel = Panel(
-        controls_content,
+        Align.center(controls_content, vertical="middle"),
         border_style=get_style("cyan"),
         box=box.ROUNDED,
         title="[cyan]⌨ " + _("controls") + "[/cyan]",
         width=24,
-        height=panel_height,
     )
 
     info_layout = Layout()
@@ -243,38 +240,10 @@ def create_modern_title(
     content_layout = Layout()
     content_layout.split_column(
         Layout(logo_panel, size=logo_lines + 2),
-        Layout(info_layout, size=panel_height),
+        Layout(info_layout, ratio=1),
     )
 
-    total_content_h = logo_lines + 2 + panel_height
-
-    def _decorate_spacer(style: str) -> Text:
-        import random
-
-        try:
-            width = os.get_terminal_size().columns
-        except Exception:
-            width = 120
-        chars = ["▓", "▒", "░", "█", "▀", "▄", "▌", "▐", "·", "*"]
-        line = Text()
-        for _ in range(width):
-            if random.random() < 0.06:
-                line.append(random.choice(chars), style=style)
-            else:
-                line.append(" ")
-        return line
-
-    top_spacer = _decorate_spacer("dim cyan")
-    bottom_spacer = _decorate_spacer("dim cyan")
-
-    main_layout = Layout()
-    main_layout.split_column(
-        Layout(top_spacer, ratio=1),
-        Layout(content_layout, size=total_content_h),
-        Layout(bottom_spacer, ratio=1),
-    )
-
-    return main_layout
+    return content_layout
 
 
 def create_help_screen(frame: int = 0) -> Layout:
@@ -343,6 +312,52 @@ def create_about_screen(frame: int = 0, extra_msg: str = "") -> Layout:
     layout.split_column(
         Layout(Text(" "), ratio=1),
         Layout(Align.center(panel, vertical="middle"), size=(15 if extra_msg else 13)),
+        Layout(Text(" "), ratio=1),
+    )
+    return layout
+
+
+def create_achievements_screen(frame: int = 0) -> Layout:
+    mgr = AchievementManager()
+    unlocked, total = mgr.get_unlocked_count()
+
+    text = Text()
+    text.append(_glitch_text(_("achievements"), frame, "bold yellow", 0.15))
+    text.append("\n\n", style="")
+
+    for ach in mgr.ACHIEVEMENTS:
+        is_unlocked = ach.id in mgr.unlocked
+        if ach.secret and not is_unlocked:
+            display_name = "???"
+            display_desc = _("hidden_achievement")
+            icon = "❓"
+        else:
+            display_name = ach.name
+            display_desc = ach.description
+            icon = ach.icon
+
+        status_icon = "✅" if is_unlocked else "⬜"
+        tier_name = str(ach.tier.name)
+        text.append(f"{status_icon} {icon} ", style=ach.get_tier_style())
+        text.append(f"{display_name}\n", style="bold" if is_unlocked else "dim")
+        text.append(f"    {display_desc}\n", style="dim")
+
+    text.append(f"\n{_('achievements_unlocked', unlocked, total)}", style="yellow")
+    text.append(f"\n{_('return_menu_any')}", style="dim")
+
+    panel = Panel(
+        Align.center(text, vertical="middle"),
+        title=f"[bold yellow]{_('achievements')}[/bold yellow]",
+        border_style="yellow",
+        box=box.ROUNDED if frame % 20 < 10 else box.DOUBLE,
+        width=60,
+        height=26,
+    )
+
+    layout = Layout()
+    layout.split_column(
+        Layout(Text(" "), ratio=1),
+        Layout(Align.center(panel, vertical="middle"), size=26),
         Layout(Text(" "), ratio=1),
     )
     return layout
@@ -439,6 +454,7 @@ def show_title_screen() -> tuple:
     menu_items = [
         (_("start_game"), "start", True),
         (_("continue_game"), "continue", has_save),
+        (_("achievements"), "achievements", True),
         (_("settings"), "settings", True),
         (_("help"), "help", True),
         (_("about"), "about", True),
@@ -485,6 +501,7 @@ def show_title_screen() -> tuple:
             showing_help = False
             showing_settings = False
             showing_about = False
+            showing_achievements = False
             settings_index = 0
 
             while True:
@@ -510,6 +527,14 @@ def show_title_screen() -> tuple:
                             time.sleep(1.5)
                         else:
                             showing_about = False
+                    time.sleep(0.05)
+                    continue
+
+                if showing_achievements:
+                    live.update(create_achievements_screen(frame))
+                    key = input_handler.get_key()
+                    if key:
+                        showing_achievements = False
                     time.sleep(0.05)
                     continue
 
@@ -685,6 +710,8 @@ def show_title_screen() -> tuple:
                             showing_help = True
                         elif action == "about":
                             showing_about = True
+                        elif action == "achievements":
+                            showing_achievements = True
                         elif action == "settings":
                             showing_settings = True
                             settings_index = 0
