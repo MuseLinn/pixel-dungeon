@@ -7,33 +7,12 @@ INSTALL_DIR="${PIXEL_DUNGEON_HOME:-$HOME/.local/share/pixel-dungeon}"
 BIN_DIR="$HOME/.local/bin"
 WRAPPER="$BIN_DIR/pixel-dungeon"
 
-clone_repo() {
-    mkdir -p "$(dirname "$INSTALL_DIR")"
-    git clone "$1" "$INSTALL_DIR"
-}
-
-echo "==> 安装 Pixel Dungeon 到 $INSTALL_DIR"
-
-if [ -d "$INSTALL_DIR" ]; then
-    echo "==> 目录已存在，执行更新 (git pull)..."
-    cd "$INSTALL_DIR"
-    git pull origin master || { echo "错误: git pull 失败"; exit 1; }
-else
-    echo "==> 尝试 HTTPS 克隆..."
-    if ! clone_repo "$REPO_URL_HTTPS"; then
-        echo "==> HTTPS 失败，尝试 SSH 克隆..."
-        if ! clone_repo "$REPO_URL_SSH"; then
-            echo "错误: git clone 失败。HTTPS 和 SSH 均不可用。"
-            echo "建议: 1) 检查网络连接; 2) 手动下载 ZIP 解压到 $INSTALL_DIR"
-            exit 1
-        fi
+PYTHON_CMD=""
+for cmd in python3 python py3; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+        PYTHON_CMD="$cmd"
+        break
     fi
-fi
-
-if [ ! -d "$INSTALL_DIR" ]; then
-    echo "错误: 安装目录不存在，克隆似乎失败了"
-    exit 1
-fi
 done
 
 if [ -z "$PYTHON_CMD" ]; then
@@ -50,27 +29,37 @@ if [ "$PY_MAJOR" -lt 3 ] || { [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 7 ]; };
     exit 1
 fi
 
-echo "   Python: $PY_MAJOR.$PY_MINOR ($PYTHON_CMD)"
-
 if ! $PYTHON_CMD -c "import rich" >/dev/null 2>&1; then
     echo "==> 安装依赖 rich..."
     pip3 install rich 2>/dev/null || pip install rich 2>/dev/null || {
         echo "错误: 无法自动安装 rich，请手动运行: pip3 install rich"
         exit 1
     }
-else
-    echo "   rich: 已安装"
 fi
+
+clone_repo() {
+    mkdir -p "$(dirname "$INSTALL_DIR")"
+    git clone "$1" "$INSTALL_DIR"
+}
 
 echo "==> 安装 Pixel Dungeon 到 $INSTALL_DIR"
 
 if [ -d "$INSTALL_DIR" ]; then
     echo "==> 目录已存在，执行更新 (git pull)..."
+    ORIGINAL_DIR="$(pwd)"
     cd "$INSTALL_DIR"
-    git pull origin master || { echo "错误: git pull 失败"; exit 1; }
+    git pull origin master || { echo "错误: git pull 失败"; cd "$ORIGINAL_DIR"; exit 1; }
+    cd "$ORIGINAL_DIR"
 else
-    mkdir -p "$(dirname "$INSTALL_DIR")"
-    git clone "$REPO_URL" "$INSTALL_DIR" || { echo "错误: git clone 失败"; exit 1; }
+    echo "==> 尝试 HTTPS 克隆..."
+    if ! clone_repo "$REPO_URL_HTTPS"; then
+        echo "==> HTTPS 失败，尝试 SSH 克隆..."
+        if ! clone_repo "$REPO_URL_SSH"; then
+            echo "错误: git clone 失败。HTTPS 和 SSH 均不可用。"
+            echo "建议: 1) 检查网络连接; 2) 手动下载 ZIP 解压到 $INSTALL_DIR"
+            exit 1
+        fi
+    fi
 fi
 
 if [ ! -d "$INSTALL_DIR" ]; then

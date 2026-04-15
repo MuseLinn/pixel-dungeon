@@ -9,7 +9,7 @@ function Show-Banner {
     Write-Host "   |_| |_/_/_\___|_| |___/ \_,_|_||_\__, \___\___/_||_|"
     Write-Host "                                      |___/"
     Write-Host "              P I X E L   D U N G E O N"
-    Write-Host "                   像素地牢 v1.0"
+    Write-Host "                   像素地牢"
     Write-Host ""
 }
 
@@ -89,8 +89,10 @@ Write-Host "==> 安装 Pixel Dungeon 到 $InstallDir"
 
 if (Test-Path $InstallDir) {
     Write-Host "==> 目录已存在，执行更新 (git pull)..."
+    Push-Location
     Set-Location $InstallDir
     git pull origin master
+    Pop-Location
     if ($LASTEXITCODE -ne 0) {
         Write-Error "错误: git pull 失败，请检查网络连接或 Git SSL 配置"
         exit 1
