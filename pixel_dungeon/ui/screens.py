@@ -695,18 +695,22 @@ def show_title_screen() -> tuple:
                     elif key.lower() == "u":
                         from ..utils.ota import check_and_update
 
+                        for f in range(12):
+                            live.update(
+                                create_matrix_transition_layout(
+                                    frame=f, console=live.console
+                                )
+                            )
+                            time.sleep(0.04)
                         ok, msg = check_and_update()
                         update_info["available"] = False
-                        live.update(
-                            create_modern_title(
-                                frame,
-                                menu_index,
-                                menu_items,
-                                saves,
-                                {"available": False},
+                        for f in range(12, 24):
+                            live.update(
+                                create_matrix_transition_layout(
+                                    frame=f, console=live.console
+                                )
                             )
-                        )
-                        time.sleep(0.3)
+                            time.sleep(0.04)
                         live.update(create_about_screen(frame, extra_msg=msg))
                         time.sleep(1.5)
                     elif key in ("1", "2", "3"):

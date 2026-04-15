@@ -74,6 +74,62 @@ def is_git_repo(path: Path) -> bool:
     return (path / ".git").is_dir()
 
 
+def _regenerate_launcher(install_dir: Path) -> bool:
+    import platform
+    import sys
+
+    try:
+        if platform.system() == "Windows":
+            bin_dir = (
+                Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+                / "Microsoft"
+                / "WindowsApps"
+            )
+            wrapper = bin_dir / "pixel-dungeon.bat"
+            python_cmd = sys.executable or "python"
+            batch_content = (
+                f"@echo off\n"
+                f"set PIXEL_DUNGEON_HOME={install_dir}\n"
+                f'cd /d "%PIXEL_DUNGEON_HOME%"\n'
+                f'if /I "%1"=="update" (\n'
+                f"    {python_cmd} pixel_dungeon.py --update\n"
+                f') else if /I "%1"=="uninstall" (\n'
+                f"    {python_cmd} pixel_dungeon.py --uninstall\n"
+                f") else (\n"
+                f"    {python_cmd} pixel_dungeon.py %*\n"
+                f")\n"
+            )
+            bin_dir.mkdir(parents=True, exist_ok=True)
+            wrapper.write_text(batch_content, encoding="ascii")
+        else:
+            bin_dir = Path.home() / ".local" / "bin"
+            wrapper = bin_dir / "pixel-dungeon"
+            shell_content = (
+                "#!/usr/bin/env bash\n"
+                f'export PIXEL_DUNGEON_HOME="${{PIXEL_DUNGEON_HOME:-{install_dir}}}"\n'
+                'cd "$PIXEL_DUNGEON_HOME"\n'
+                'case "$1" in\n'
+                "  update)\n"
+                "    shift\n"
+                '    python3 pixel_dungeon.py --update "$@"\n'
+                "    ;;\n"
+                "  uninstall)\n"
+                "    shift\n"
+                '    python3 pixel_dungeon.py --uninstall "$@"\n'
+                "    ;;\n"
+                "  *)\n"
+                '    python3 pixel_dungeon.py "$@"\n'
+                "    ;;\n"
+                "esac\n"
+            )
+            bin_dir.mkdir(parents=True, exist_ok=True)
+            wrapper.write_text(shell_content, encoding="utf-8")
+            wrapper.chmod(0o755)
+        return True
+    except Exception:
+        return False
+
+
 def update_via_git(path: Path) -> tuple[bool, str]:
     try:
         result = subprocess.run(
@@ -133,6 +189,7 @@ def check_and_update() -> tuple[bool, str]:
                 or "already up-to-date" in msg.lower()
             ):
                 return True, _("latest_version", VERSION)
+            _regenerate_launcher(root)
             return True, _("updated_restart")
         return False, _("update_failed", msg)
     except Exception as e:
