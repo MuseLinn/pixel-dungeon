@@ -242,13 +242,6 @@ def create_modern_title(
         Layout(saves_panel, ratio=2),
     )
 
-    info_layout = Layout()
-    info_layout.split_row(
-        Layout(left_panel, ratio=3),
-        Layout(menu_panel, ratio=2),
-        Layout(controls_panel, ratio=2),
-    )
-
     content_layout = Layout()
     content_layout.split_column(
         Layout(logo_panel, size=logo_lines + 2),
