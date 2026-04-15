@@ -58,10 +58,15 @@ echo "==> 安装 Pixel Dungeon 到 $INSTALL_DIR"
 if [ -d "$INSTALL_DIR" ]; then
     echo "==> 目录已存在，执行更新 (git pull)..."
     cd "$INSTALL_DIR"
-    git pull origin master
+    git pull origin master || { echo "错误: git pull 失败"; exit 1; }
 else
     mkdir -p "$(dirname "$INSTALL_DIR")"
-    git clone "$REPO_URL" "$INSTALL_DIR"
+    git clone "$REPO_URL" "$INSTALL_DIR" || { echo "错误: git clone 失败"; exit 1; }
+fi
+
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "错误: 安装目录不存在，克隆似乎失败了"
+    exit 1
 fi
 
 echo "==> 创建启动器..."

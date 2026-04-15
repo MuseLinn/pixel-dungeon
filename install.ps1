@@ -82,10 +82,23 @@ if (Test-Path $InstallDir) {
     Write-Host "==> 目录已存在，执行更新 (git pull)..."
     Set-Location $InstallDir
     git pull origin master
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "错误: git pull 失败，请检查网络连接或 Git SSL 配置"
+        exit 1
+    }
 } else {
     $Parent = Split-Path $InstallDir -Parent
     if (!(Test-Path $Parent)) { New-Item -ItemType Directory -Path $Parent -Force | Out-Null }
     git clone $RepoUrl $InstallDir
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "错误: git clone 失败。如果提示 SSL/TLS 错误，请尝试运行: git config --global http.sslBackend openssl"
+        exit 1
+    }
+}
+
+if (-not (Test-Path $InstallDir)) {
+    Write-Error "错误: 安装目录不存在，克隆似乎失败了"
+    exit 1
 }
 
 Write-Host "==> 创建启动器..."
