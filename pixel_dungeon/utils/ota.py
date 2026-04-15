@@ -74,7 +74,7 @@ def is_git_repo(path: Path) -> bool:
     return (path / ".git").is_dir()
 
 
-def _regenerate_launcher(install_dir: Path) -> bool:
+def _regenerate_launcher(install_dir: Path) -> tuple[bool, str]:
     import platform
     import sys
 
@@ -125,9 +125,9 @@ def _regenerate_launcher(install_dir: Path) -> bool:
             bin_dir.mkdir(parents=True, exist_ok=True)
             wrapper.write_text(shell_content, encoding="utf-8")
             wrapper.chmod(0o755)
-        return True
-    except Exception:
-        return False
+        return True, str(wrapper)
+    except Exception as e:
+        return False, str(e)
 
 
 def update_via_git(path: Path) -> tuple[bool, str]:
@@ -189,8 +189,13 @@ def check_and_update() -> tuple[bool, str]:
                 or "already up-to-date" in msg.lower()
             ):
                 return True, _("latest_version", VERSION)
-            _regenerate_launcher(root)
-            return True, _("updated_restart")
+            lr_ok, lr_msg = _regenerate_launcher(root)
+            lines = [_("updated_restart")]
+            if lr_ok:
+                lines.append(_("launcher_regenerated", lr_msg))
+            else:
+                lines.append(_("launcher_regen_failed", lr_msg))
+            return True, "\n".join(lines)
         return False, _("update_failed", msg)
     except Exception as e:
         return False, _("update_failed", e)

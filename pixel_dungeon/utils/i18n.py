@@ -328,6 +328,8 @@ _TRANSLATIONS = {
         # OTA / Install
         "latest_version": "当前已是最新版本 {}",
         "updated_restart": "已更新到最新版本，请重启游戏",
+        "launcher_regenerated": "已重新生成启动器: {}",
+        "launcher_regen_failed": "启动器重新生成失败: {}",
         "update_available": "新版本 {} 可用",
         "press_u_to_update": "按 U 更新",
         "update_failed": "更新失败: {}",
@@ -693,6 +695,8 @@ _TRANSLATIONS = {
         # OTA / Install
         "latest_version": "Already up-to-date (v{})",
         "updated_restart": "Updated to latest. Please restart.",
+        "launcher_regenerated": "Launcher regenerated: {}",
+        "launcher_regen_failed": "Launcher regeneration failed: {}",
         "update_available": "New version {} available",
         "press_u_to_update": "Press U to update",
         "update_failed": "Update failed: {}",
