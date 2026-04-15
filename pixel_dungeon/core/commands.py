@@ -27,6 +27,7 @@ class CommandHandler:
         "killall": _("cmd_killall_desc"),
         "next": _("cmd_next_desc"),
         "theme": _("cmd_theme_desc"),
+        "save": _("cmd_save_desc"),
     }
 
     def __init__(self, game):
@@ -68,6 +69,7 @@ class CommandHandler:
             "killall": self.cmd_killall,
             "next": self.cmd_next,
             "theme": self.cmd_theme,
+            "save": self.cmd_save,
         }
 
         if cmd in handlers:
@@ -208,3 +210,14 @@ class CommandHandler:
             CONFIG.save_settings()
             return f"🎨 {_('theme_set', CONFIG.theme)}"
         return f"🎨 {_('theme')}: {CONFIG.theme}\n" + _("theme_usage", "dark/light")
+
+    def cmd_save(self, args):
+        slot = 0
+        if args:
+            try:
+                slot = int(args[0])
+            except (ValueError, TypeError):
+                pass
+        if self.game.save_game(slot):
+            return f"💾 {_('game_saved', slot)}"
+        return "❌ " + _("save_failed")

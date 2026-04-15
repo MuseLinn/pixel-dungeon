@@ -801,11 +801,10 @@ class Game:
             self.open_shop()
         elif key.lower() == "p":
             self.toggle_pause()
-        elif key.lower() == "s":
-            self.save_game()
         elif key.lower() == "r":
             self.restart_game()
         elif key.lower() == "m":
+            self.save_game()
             self.menu_transition_type = "out"
             self.menu_transition_timer = 20
         elif key.lower() == "q":
@@ -885,12 +884,11 @@ class Game:
     def handle_pause_input(self, key: str) -> None:
         if key.lower() == "p":
             self.toggle_pause()
-        elif key.lower() == "s":
-            self.save_game()
         elif key.lower() == "r":
             self.toggle_pause()
             self.restart_game()
         elif key.lower() == "m":
+            self.save_game()
             self.menu_transition_type = "out"
             self.menu_transition_timer = 20
         elif key.lower() == "q":

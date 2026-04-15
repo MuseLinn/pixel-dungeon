@@ -444,7 +444,7 @@ class Renderer:
         table.add_row(
             cell("▓", "bright_black", _("wall")),
             Text(
-                "WASD移动 B商店 P暂停 S存档 R重启 M菜单 ?帮助 /命令",
+                "WASD移动 B商店 P暂停 /save R重启 M菜单 ?帮助 /命令",
                 style=get_style("dim"),
             ),
             Text(),
